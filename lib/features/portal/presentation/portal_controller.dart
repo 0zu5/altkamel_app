@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
@@ -33,6 +34,11 @@ class PortalController extends ChangeNotifier {
   /// password change) so screens can disable their buttons while a
   /// request is in flight.
   bool actionLoading = false;
+
+  /// Separate from [actionLoading] so normal account actions remain usable
+  /// while the user is completing card checkout in their browser.
+  bool rechargeLoading = false;
+  CardRecharge? latestRecharge;
 
   /// True once the session looks invalid (401 from a core call) so the UI
   /// can send the user back to the login screen.
@@ -145,6 +151,48 @@ class PortalController extends ChangeNotifier {
       // Best-effort refresh — ignore failures.
     }
     loadInvoices();
+  }
+
+  Future<CardRecharge?> createCardRecharge(int amountLyd) async {
+    rechargeLoading = true;
+    notifyListeners();
+    try {
+      final recharge = await repository.createCardRecharge(
+        amountLyd: amountLyd,
+        idempotencyKey: _uuidV4(),
+      );
+      latestRecharge = recharge;
+      return recharge;
+    } catch (_) {
+      rethrow;
+    } finally {
+      rechargeLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Poll Laravel, rather than trusting the gateway browser return page.
+  Future<CardRecharge?> refreshCardRecharge() async {
+    final id = latestRecharge?.id;
+    if (id == null || id.isEmpty) return null;
+    rechargeLoading = true;
+    notifyListeners();
+    try {
+      final recharge = await repository.getCardRecharge(id);
+      latestRecharge = recharge;
+      if (recharge.state == 'credited') {
+        unawaited(refreshAccountData());
+      }
+      return recharge;
+    } finally {
+      rechargeLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void clearLatestRecharge() {
+    latestRecharge = null;
+    notifyListeners();
   }
 
   /// Returns an Arabic success/error message on completion.
@@ -263,5 +311,18 @@ class PortalController extends ChangeNotifier {
   String _messageOf(Object e, String fallback) {
     final message = e.toString().replaceFirst('Exception: ', '').trim();
     return message.isNotEmpty ? message : fallback;
+  }
+
+  String _uuidV4() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final hex = bytes
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+        .join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+        '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
+        '${hex.substring(20)}';
   }
 }

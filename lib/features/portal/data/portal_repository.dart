@@ -146,6 +146,50 @@ class PortalRepository {
     }
   }
 
+  /// Creates a card-recharge order in Laravel. Laravel chooses and verifies
+  /// the payment gateway session; Flutter only opens the returned HTTPS URL.
+  Future<CardRecharge> createCardRecharge({
+    required int amountLyd,
+    required String idempotencyKey,
+  }) async {
+    try {
+      final account = _account(await _portal());
+      final sasAccountId = account['id'];
+      if (sasAccountId is! num && int.tryParse('$sasAccountId') == null) {
+        throw Exception('تعذر تحديد الحساب المراد شحنه.');
+      }
+
+      final response = await apiClient.dio.post(
+        '/payments/card/checkout',
+        data: {
+          'sas_account_id': sasAccountId,
+          'amount_lyd': amountLyd,
+          'idempotency_key': idempotencyKey,
+        },
+      );
+      final body = response.data;
+      final data = body is Map ? body['data'] : null;
+      if (data is! Map) throw Exception('تعذر بدء عملية الشحن.');
+      return CardRecharge.fromJson(data);
+    } on DioException catch (e) {
+      throw Exception(_friendlyPaymentError(e));
+    }
+  }
+
+  /// Reads the Laravel payment record. This is the source of truth after a
+  /// browser return; a return page alone never proves that a payment settled.
+  Future<CardRecharge> getCardRecharge(String paymentId) async {
+    try {
+      final response = await apiClient.dio.get('/payments/$paymentId');
+      final body = response.data;
+      final data = body is Map ? body['data'] : null;
+      if (data is! Map) throw Exception('تعذر التحقق من حالة عملية الشحن.');
+      return CardRecharge.fromJson(data);
+    } on DioException catch (e) {
+      throw Exception(_friendlyPaymentError(e));
+    }
+  }
+
   /// Mutating portal features are intentionally unavailable until Laravel
   /// implements and audits their dedicated endpoints.
   Future<void> redeemCode(String pin) async {
@@ -201,6 +245,22 @@ class PortalRepository {
       return SasMessages.networkError;
     }
     return fallback;
+  }
+
+  String _friendlyPaymentError(DioException e) {
+    if (e.response?.statusCode == 401) return SasMessages.sessionExpired;
+    if (e.response?.statusCode == 403) return 'لا تملك صلاحية شحن هذا الحساب.';
+    if (e.response?.statusCode == 422) {
+      return 'تحقق من مبلغ الشحن وحاول مرة أخرى.';
+    }
+    if (e.response?.statusCode == 503) {
+      return 'خدمة الشحن بالبطاقة غير متاحة مؤقتاً.';
+    }
+    if (e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.connectionTimeout) {
+      return SasMessages.networkError;
+    }
+    return 'تعذر إكمال عملية الشحن الآن. حاول مرة أخرى لاحقاً.';
   }
 
   num _num(dynamic v) => v is num ? v : (num.tryParse(v.toString()) ?? 0);

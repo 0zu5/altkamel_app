@@ -219,3 +219,50 @@ class InvoiceInfo {
     );
   }
 }
+
+/// A mobile card-recharge transaction owned by the Laravel API.
+///
+/// The checkout URL is intentionally returned only after Laravel has created
+/// the payment record. The app must never construct a gateway URL itself or
+/// send card data to any service other than the browser checkout.
+class CardRecharge {
+  final String id;
+  final String state;
+  final int amountMinor;
+  final String currency;
+  final Uri? checkoutUrl;
+  final DateTime? settledAt;
+  final DateTime? sasCreditedAt;
+
+  const CardRecharge({
+    required this.id,
+    required this.state,
+    required this.amountMinor,
+    required this.currency,
+    this.checkoutUrl,
+    this.settledAt,
+    this.sasCreditedAt,
+  });
+
+  factory CardRecharge.fromJson(Map json) {
+    final rawCheckoutUrl = _toStringOrNull(json['checkout_url']);
+    return CardRecharge(
+      id: (json['id'] ?? '').toString(),
+      state: (json['state'] ?? 'pending_review').toString(),
+      amountMinor: _toNum(json['amount_minor']).toInt(),
+      currency: (json['currency'] ?? 'LYD').toString(),
+      checkoutUrl: rawCheckoutUrl == null || rawCheckoutUrl.isEmpty
+          ? null
+          : Uri.tryParse(rawCheckoutUrl),
+      settledAt: DateTime.tryParse(_toStringOrNull(json['settled_at']) ?? ''),
+      sasCreditedAt: DateTime.tryParse(
+        _toStringOrNull(json['sas_credited_at']) ?? '',
+      ),
+    );
+  }
+
+  num get amountLyd => amountMinor / 1000;
+
+  bool get isFinal =>
+      const {'credited', 'declined', 'cancelled'}.contains(state);
+}

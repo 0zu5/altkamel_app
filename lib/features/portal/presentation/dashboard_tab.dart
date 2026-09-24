@@ -4,7 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import 'portal_controller.dart';
 import 'widgets/portal_card.dart';
-import 'widgets/redeem_dialog.dart';
+import 'widgets/recharge_sheet.dart';
 
 /// The main landing tab: balance, subscription status, today's usage, and
 /// quick actions — mirrors the top section of the website's dashboard.vue.
@@ -17,15 +17,6 @@ class DashboardTab extends StatelessWidget {
     required this.controller,
     required this.onGoToPackages,
   });
-
-  Future<void> _openRedeemDialog(BuildContext context) async {
-    final message = await showRedeemDialog(context, controller);
-    if (message != null && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-    }
-  }
 
   Future<void> _confirmActivate(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -117,8 +108,8 @@ class DashboardTab extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => _openRedeemDialog(context),
-                      icon: const Icon(Icons.card_giftcard_outlined),
+                      onPressed: () => showRechargeSheet(context, controller),
+                      icon: const Icon(Icons.credit_card_rounded),
                       label: const Text('شحن رصيد'),
                     ),
                   ),
