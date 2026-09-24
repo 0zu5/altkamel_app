@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -59,8 +61,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (success && mounted) {
-      await widget.appConfigController.refresh();
-      if (!mounted) return;
+      // Configuration is an optional experience enhancement. It must never
+      // delay a successful login or trap the customer on the loading state.
+      unawaited(widget.appConfigController.refresh());
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => PortalShell(
