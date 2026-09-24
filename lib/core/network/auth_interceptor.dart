@@ -6,7 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class AuthInterceptor extends Interceptor {
   final FlutterSecureStorage storage;
   final Dio dio;
-  bool _refreshing = false;
+  Future<String?>? _refreshInFlight;
 
   AuthInterceptor(this.storage, this.dio);
 
@@ -33,22 +33,45 @@ class AuthInterceptor extends Interceptor {
     final canRetry =
         err.response?.statusCode == 401 &&
         !_isSessionEndpoint(options.path) &&
-        options.extra['retried_after_refresh'] != true &&
-        !_refreshing;
+        options.extra['retried_after_refresh'] != true;
 
     if (!canRetry) {
       handler.next(err);
       return;
     }
 
-    final refreshToken = await storage.read(key: 'refresh_token');
-    final installationId = await storage.read(key: 'installation_id');
-    if (refreshToken == null || installationId == null) {
+    final accessToken = await _refreshAccessToken();
+    if (accessToken == null) {
       handler.next(err);
       return;
     }
 
-    _refreshing = true;
+    options.headers['Authorization'] = 'Bearer $accessToken';
+    options.extra['retried_after_refresh'] = true;
+    handler.resolve(await dio.fetch(options));
+  }
+
+  /// A browser checkout can outlive the 15-minute access token. When the
+  /// app resumes, several requests may receive 401 together; all wait for
+  /// one refresh instead of treating a concurrent request as a logout.
+  Future<String?> _refreshAccessToken() async {
+    final existing = _refreshInFlight;
+    if (existing != null) return existing;
+
+    final refresh = _performRefresh();
+    _refreshInFlight = refresh;
+    try {
+      return await refresh;
+    } finally {
+      if (identical(_refreshInFlight, refresh)) _refreshInFlight = null;
+    }
+  }
+
+  Future<String?> _performRefresh() async {
+    final refreshToken = await storage.read(key: 'refresh_token');
+    final installationId = await storage.read(key: 'installation_id');
+    if (refreshToken == null || installationId == null) return null;
+
     try {
       final refreshClient = Dio(
         BaseOptions(
@@ -76,21 +99,16 @@ class AuthInterceptor extends Interceptor {
           ? session['refresh_token']?.toString()
           : null;
       if (accessToken == null || rotatedRefreshToken == null) {
-        handler.next(err);
-        return;
+        return null;
       }
 
       await storage.write(key: 'auth_token', value: accessToken);
       await storage.write(key: 'refresh_token', value: rotatedRefreshToken);
-      options.headers['Authorization'] = 'Bearer $accessToken';
-      options.extra['retried_after_refresh'] = true;
-      handler.resolve(await dio.fetch(options));
+      return accessToken;
     } on DioException {
       await storage.delete(key: 'auth_token');
       await storage.delete(key: 'refresh_token');
-      handler.next(err);
-    } finally {
-      _refreshing = false;
+      return null;
     }
   }
 
