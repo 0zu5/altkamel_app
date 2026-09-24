@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -11,25 +14,32 @@ class AuthRepository {
 
   Future<bool> login(String username, String password) async {
     try {
-      // The EncryptionInterceptor will automatically encrypt this map!
-      // NOTE: the SASv4 endpoint is `/auth/login` (not `/login`), and it
-      // requires a `language` field on top of username/password — see
-      // sas-api-reference.md in the website repo.
+      final installationId = await _installationId();
       final response = await apiClient.dio.post(
         '/auth/login',
         data: {
           'username': username,
           'password': password,
-          'language': 'en',
+          'installation_id': installationId,
+          'platform': _platform,
+          'app_version': '1.0.0',
+          'os_version': Platform.operatingSystemVersion,
+          'locale': Platform.localeName.split('.').first,
         },
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 201) {
         final data = response.data;
         if (data is Map) {
-          final token = data['token'] ?? data['access_token'];
-          if (token != null) {
+          final session = data['data']?['session'];
+          final token = session is Map ? session['access_token'] : null;
+          final refreshToken = session is Map ? session['refresh_token'] : null;
+          if (token != null && refreshToken != null) {
             await storage.write(key: 'auth_token', value: token.toString());
+            await storage.write(
+              key: 'refresh_token',
+              value: refreshToken.toString(),
+            );
             return true;
           }
 
@@ -61,8 +71,33 @@ class AuthRepository {
   }
 
   Future<void> logout() async {
-    await storage.delete(key: 'auth_token');
+    try {
+      await apiClient.dio.post('/auth/logout');
+    } finally {
+      await storage.delete(key: 'auth_token');
+      await storage.delete(key: 'refresh_token');
+    }
   }
+
+  Future<String> _installationId() async {
+    final existing = await storage.read(key: 'installation_id');
+    if (existing != null && existing.isNotEmpty) return existing;
+
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    String part(int from, int to) => bytes
+        .sublist(from, to)
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+        .join();
+    final created =
+        '${part(0, 4)}-${part(4, 6)}-${part(6, 8)}-${part(8, 10)}-${part(10, 16)}';
+    await storage.write(key: 'installation_id', value: created);
+    return created;
+  }
+
+  String get _platform => Platform.isIOS ? 'ios' : 'android';
 
   /// Pulls a human-readable message out of a failed response, whatever its
   /// shape (JSON map, plain string/HTML, or nothing at all) — and never

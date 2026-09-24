@@ -62,7 +62,8 @@ class PortalController extends ChangeNotifier {
   bool isCurrentPackage(PackageInfo pkg) =>
       pkg.id.toString() == effectiveProfileId?.toString();
 
-  int get remainingDays => balance.remainingDays < 0 ? 0 : balance.remainingDays;
+  int get remainingDays =>
+      balance.remainingDays < 0 ? 0 : balance.remainingDays;
 
   bool get isAccountActive => remainingDays > 0 || (service?.status ?? false);
 
@@ -70,6 +71,7 @@ class PortalController extends ChangeNotifier {
     isLoading = true;
     loadError = null;
     sessionExpired = false;
+    repository.invalidatePortalCache();
     notifyListeners();
 
     try {
@@ -131,6 +133,7 @@ class PortalController extends ChangeNotifier {
   /// a code or changing a package) without showing the full loading state.
   Future<void> refreshAccountData() async {
     try {
+      repository.invalidatePortalCache();
       final results = await Future.wait([
         repository.getBalance(),
         repository.getPackages(),
@@ -181,7 +184,9 @@ class PortalController extends ChangeNotifier {
   Future<String> toggleAutoRenew(bool enable) async {
     if (user == null) return SasMessages.unexpectedError;
 
-    if (enable && currentPackagePrice > 0 && balance.balance < currentPackagePrice) {
+    if (enable &&
+        currentPackagePrice > 0 &&
+        balance.balance < currentPackagePrice) {
       return 'الرصيد غير كافٍ للتجديد التلقائي. يرجى تعبئة الرصيد أولاً.';
     }
 
@@ -221,7 +226,9 @@ class PortalController extends ChangeNotifier {
 
   /// Requests a package change, then polls the server to confirm it
   /// actually took — mirrors the website's `handlePkgChange` flow.
-  Future<ChangeSubscriptionResult> changeSubscription(PackageInfo target) async {
+  Future<ChangeSubscriptionResult> changeSubscription(
+    PackageInfo target,
+  ) async {
     final targetId = target.id.toString();
     actionLoading = true;
     notifyListeners();
