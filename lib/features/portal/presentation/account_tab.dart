@@ -12,12 +12,18 @@ class AccountTab extends StatelessWidget {
   final PortalController controller;
   final VoidCallback onLogout;
 
-  const AccountTab({super.key, required this.controller, required this.onLogout});
+  const AccountTab({
+    super.key,
+    required this.controller,
+    required this.onLogout,
+  });
 
   Future<void> _openRedeemDialog(BuildContext context) async {
     final message = await showRedeemDialog(context, controller);
     if (message != null && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -27,7 +33,9 @@ class AccountTab extends StatelessWidget {
       builder: (context) => _ChangePasswordDialog(controller: controller),
     );
     if (message != null && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -38,8 +46,14 @@ class AccountTab extends StatelessWidget {
         title: const Text('تسجيل الخروج'),
         content: const Text('هل تريد تسجيل الخروج من حسابك؟'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('إلغاء')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('تسجيل الخروج')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('تسجيل الخروج'),
+          ),
         ],
       ),
     );
@@ -57,7 +71,11 @@ class AccountTab extends StatelessWidget {
           children: [
             const Text(
               'حسابي',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.slate900),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: AppColors.slate900,
+              ),
             ),
             const SizedBox(height: 20),
             PortalCard(
@@ -68,29 +86,54 @@ class AccountTab extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 26,
-                        backgroundColor: AppColors.indigo.withValues(alpha: 0.1),
-                        child: const Icon(Icons.person, color: AppColors.indigo),
+                        backgroundColor: AppColors.indigo.withValues(
+                          alpha: 0.1,
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: AppColors.indigo,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(user?.displayName ?? '', style: const TextStyle(fontWeight: FontWeight.w900)),
-                            Text('@${user?.username ?? ''}',
-                                style: const TextStyle(color: AppColors.slate500, fontSize: 12)),
+                            Text(
+                              user?.displayName ?? '',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            Text(
+                              user?.phone ?? user?.username ?? '',
+                              style: const TextStyle(
+                                color: AppColors.slate500,
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
                   const Divider(height: 28),
-                  _InfoRow(icon: Icons.email_outlined, label: 'البريد الإلكتروني', value: user?.email),
-                  _InfoRow(icon: Icons.phone_outlined, label: 'الهاتف', value: user?.phone),
+                  _InfoRow(
+                    icon: Icons.email_outlined,
+                    label: 'البريد الإلكتروني',
+                    value: user?.email,
+                  ),
+                  _InfoRow(
+                    icon: Icons.phone_outlined,
+                    label: 'الهاتف',
+                    value: user?.phone,
+                  ),
                   _InfoRow(
                     icon: Icons.calendar_today_outlined,
                     label: 'تاريخ التسجيل',
-                    value: user?.registeredOn != null ? Formatters.arabicDate(user!.registeredOn) : null,
+                    value: user?.registeredOn != null
+                        ? Formatters.arabicDate(user!.registeredOn)
+                        : null,
                   ),
                 ],
               ),
@@ -102,7 +145,13 @@ class AccountTab extends StatelessWidget {
                   const Icon(Icons.autorenew_rounded, color: AppColors.indigo),
                   const SizedBox(width: 12),
                   const Expanded(
-                    child: Text('التجديد التلقائي', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                    child: Text(
+                      'التجديد التلقائي',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
                   Switch(
                     value: user?.autoRenew ?? false,
@@ -110,8 +159,9 @@ class AccountTab extends StatelessWidget {
                     onChanged: (value) async {
                       final message = await controller.toggleAutoRenew(value);
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(SnackBar(content: Text(message)));
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(message)));
                       }
                     },
                   ),
@@ -166,7 +216,10 @@ class _InfoRow extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: AppColors.slate400),
           const SizedBox(width: 10),
-          Text(label, style: const TextStyle(color: AppColors.slate500, fontSize: 12)),
+          Text(
+            label,
+            style: const TextStyle(color: AppColors.slate500, fontSize: 12),
+          ),
           const Spacer(),
           Text(
             (value == null || value!.isEmpty) ? 'غير محدد' : value!,
@@ -184,7 +237,12 @@ class _ActionTile extends StatelessWidget {
   final VoidCallback onTap;
   final Color? color;
 
-  const _ActionTile({required this.icon, required this.label, required this.onTap, this.color});
+  const _ActionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -192,9 +250,16 @@ class _ActionTile extends StatelessWidget {
       leading: Icon(icon, color: color ?? AppColors.indigo),
       title: Text(
         label,
-        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: color ?? AppColors.slate900),
+        style: TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 13,
+          color: color ?? AppColors.slate900,
+        ),
       ),
-      trailing: const Icon(Icons.chevron_left_rounded, color: AppColors.slate400),
+      trailing: const Icon(
+        Icons.chevron_left_rounded,
+        color: AppColors.slate400,
+      ),
       onTap: onTap,
     );
   }
@@ -227,7 +292,9 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
       return;
     }
     if (_newController.text.length < 6) {
-      setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل.');
+      setState(
+        () => _error = 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل.',
+      );
       return;
     }
     setState(() => _error = null);
@@ -254,18 +321,28 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
           TextField(
             controller: _newController,
             obscureText: true,
-            decoration: InputDecoration(labelText: 'كلمة المرور الجديدة', errorText: _error),
+            decoration: InputDecoration(
+              labelText: 'كلمة المرور الجديدة',
+              errorText: _error,
+            ),
           ),
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(null), child: const Text('إلغاء')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(null),
+          child: const Text('إلغاء'),
+        ),
         ListenableBuilder(
           listenable: widget.controller,
           builder: (context, _) => FilledButton(
             onPressed: widget.controller.actionLoading ? null : _submit,
             child: widget.controller.actionLoading
-                ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Text('تغيير'),
           ),
         ),
