@@ -64,7 +64,7 @@ class PortalRepository {
         user: UserProfile.fromJson({
           ...data,
           'username': data['phone'] ?? '',
-          'profile_id': package['id'],
+          'profile_id': subscription['profile_id'] ?? package['id'],
         }),
         permissions: const <String>[],
       );
@@ -91,7 +91,7 @@ class PortalRepository {
       if (subscription.isEmpty) throw Exception(SasMessages.fetchServiceError);
       final package = _map(subscription['package']);
       return ServiceInfo.fromJson({
-        'profile_id': package['id'],
+        'profile_id': subscription['profile_id'] ?? package['id'],
         'profile_name': package['name'],
         'expiration': subscription['expires_at'],
         'status': subscription['status']?.toString().toLowerCase() == 'active',

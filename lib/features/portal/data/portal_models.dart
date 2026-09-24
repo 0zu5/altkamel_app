@@ -213,9 +213,9 @@ class InvoiceInfo {
       amount: _toNum(json['amount']),
       description: _toStringOrNull(json['description']),
       paid: _toBool(json['paid']),
-      createdAt: _toStringOrNull(json['created_at']),
+      createdAt: _toStringOrNull(json['created_at'] ?? json['issued_at']),
       paymentMethod: _toStringOrNull(json['payment_method']),
-      dueDate: _toStringOrNull(json['due_date']),
+      dueDate: _toStringOrNull(json['due_date'] ?? json['due_at']),
     );
   }
 }
