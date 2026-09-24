@@ -45,15 +45,31 @@ class AppGradients {
   );
 }
 
-ThemeData buildAppTheme() {
+enum AppThemeToken { altkamelDefault, altkamelNight }
+
+AppThemeToken appThemeTokenFromId(String? value) {
+  return switch (value) {
+    'altkamel-night' => AppThemeToken.altkamelNight,
+    _ => AppThemeToken.altkamelDefault,
+  };
+}
+
+/// Theme selection is intentionally bounded to tokens compiled into this
+/// application. Server configuration can select a token; it cannot provide
+/// arbitrary styling or executable UI.
+ThemeData buildAppTheme({AppThemeToken token = AppThemeToken.altkamelDefault}) {
+  final night = token == AppThemeToken.altkamelNight;
+  final background = night ? const Color(0xFF0F172A) : AppColors.slateBg;
+  final seed = night ? const Color(0xFF818CF8) : AppColors.indigo;
   final base = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.indigo,
-      primary: AppColors.indigo,
+      brightness: night ? Brightness.dark : Brightness.light,
+      seedColor: seed,
+      primary: seed,
       secondary: AppColors.cyan,
     ),
-    scaffoldBackgroundColor: AppColors.slateBg,
+    scaffoldBackgroundColor: background,
     fontFamily: GoogleFonts.cairo().fontFamily,
     textTheme: GoogleFonts.cairoTextTheme(),
   );

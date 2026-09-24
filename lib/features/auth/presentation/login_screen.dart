@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/app_config/app_config_controller.dart';
 import '../../portal/data/portal_repository.dart';
 import '../../portal/presentation/portal_controller.dart';
 import '../../portal/presentation/portal_shell.dart';
@@ -18,11 +19,13 @@ import 'widgets/login_hero_header.dart';
 class LoginScreen extends StatefulWidget {
   final AuthController authController;
   final PortalRepository portalRepository;
+  final AppConfigController appConfigController;
 
   const LoginScreen({
     super.key,
     required this.authController,
     required this.portalRepository,
+    required this.appConfigController,
   });
 
   @override
@@ -56,11 +59,14 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (success && mounted) {
+      await widget.appConfigController.refresh();
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => PortalShell(
             controller: PortalController(repository: widget.portalRepository),
             authController: widget.authController,
+            appConfigController: widget.appConfigController,
           ),
         ),
       );

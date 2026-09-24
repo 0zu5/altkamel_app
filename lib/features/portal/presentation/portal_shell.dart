@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/app_config/app_config_controller.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../../auth/presentation/login_screen.dart';
@@ -15,11 +16,13 @@ import 'portal_controller.dart';
 class PortalShell extends StatefulWidget {
   final PortalController controller;
   final AuthController authController;
+  final AppConfigController appConfigController;
 
   const PortalShell({
     super.key,
     required this.controller,
     required this.authController,
+    required this.appConfigController,
   });
 
   @override
@@ -63,6 +66,7 @@ class _PortalShellState extends State<PortalShell> {
         builder: (_) => LoginScreen(
           authController: widget.authController,
           portalRepository: widget.controller.repository,
+          appConfigController: widget.appConfigController,
         ),
       ),
       (route) => false,
@@ -72,16 +76,21 @@ class _PortalShellState extends State<PortalShell> {
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      DashboardTab(controller: widget.controller, onGoToPackages: () {
-        setState(() => _tabIndex = 1);
-      }),
+      DashboardTab(
+        controller: widget.controller,
+        onGoToPackages: () {
+          setState(() => _tabIndex = 1);
+        },
+      ),
       PackagesTab(controller: widget.controller),
       InvoicesTab(controller: widget.controller),
       AccountTab(controller: widget.controller, onLogout: _logout),
     ];
 
     return Scaffold(
-      body: SafeArea(child: IndexedStack(index: _tabIndex, children: tabs)),
+      body: SafeArea(
+        child: IndexedStack(index: _tabIndex, children: tabs),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tabIndex,
         onDestinationSelected: (i) => setState(() => _tabIndex = i),

@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'core/app_config/app_config_controller.dart';
+import 'core/app_config/app_config_repository.dart';
 import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/data/auth_repository.dart';
@@ -15,6 +19,13 @@ void main() {
   // Initialize Core Dependencies
   const storage = FlutterSecureStorage();
   final apiClient = ApiClient(storage: storage);
+  final appConfigRepository = AppConfigRepository(
+    apiClient: apiClient,
+    storage: storage,
+  );
+  final appConfigController = AppConfigController(
+    repository: appConfigRepository,
+  );
 
   // Initialize Auth Dependencies
   final authRepository = AuthRepository(apiClient: apiClient, storage: storage);
@@ -23,43 +34,57 @@ void main() {
   // Initialize Portal Dependencies (dashboard/packages/invoices/account)
   final portalRepository = PortalRepository(apiClient: apiClient);
 
-  runApp(MyApp(
-    authController: authController,
-    authRepository: authRepository,
-    portalRepository: portalRepository,
-  ));
+  runApp(
+    MyApp(
+      authController: authController,
+      authRepository: authRepository,
+      portalRepository: portalRepository,
+      appConfigController: appConfigController,
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final AuthController authController;
   final AuthRepository authRepository;
   final PortalRepository portalRepository;
+  final AppConfigController appConfigController;
 
   const MyApp({
     super.key,
     required this.authController,
     required this.authRepository,
     required this.portalRepository,
+    required this.appConfigController,
   });
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    unawaited(widget.appConfigController.loadCached());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'بوابة التكامل نت',
-      debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
-      // The app mirrors the Arabic, right-to-left altkamel-website portal,
-      // so the whole app is forced to RTL regardless of device locale.
-      builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: child!,
-        );
-      },
-      home: _SessionGate(
-        authController: authController,
-        authRepository: authRepository,
-        portalRepository: portalRepository,
+    return ListenableBuilder(
+      listenable: widget.appConfigController,
+      builder: (context, _) => MaterialApp(
+        title: 'بوابة التكامل نت',
+        debugShowCheckedModeBanner: false,
+        theme: buildAppTheme(token: widget.appConfigController.config.theme),
+        builder: (context, child) =>
+            Directionality(textDirection: TextDirection.rtl, child: child!),
+        home: _SessionGate(
+          authController: widget.authController,
+          authRepository: widget.authRepository,
+          portalRepository: widget.portalRepository,
+          appConfigController: widget.appConfigController,
+        ),
       ),
     );
   }
@@ -72,11 +97,13 @@ class _SessionGate extends StatefulWidget {
   final AuthController authController;
   final AuthRepository authRepository;
   final PortalRepository portalRepository;
+  final AppConfigController appConfigController;
 
   const _SessionGate({
     required this.authController,
     required this.authRepository,
     required this.portalRepository,
+    required this.appConfigController,
   });
 
   @override
@@ -84,7 +111,9 @@ class _SessionGate extends StatefulWidget {
 }
 
 class _SessionGateState extends State<_SessionGate> {
-  late final Future<bool> _isAuthenticated = widget.authRepository.isAuthenticated();
+  late final Future<bool> _isAuthenticated = widget.authRepository
+      .isAuthenticated();
+  bool _refreshedConfig = false;
 
   @override
   Widget build(BuildContext context) {
@@ -92,17 +121,25 @@ class _SessionGateState extends State<_SessionGate> {
       future: _isAuthenticated,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         if (snapshot.data == true) {
+          if (!_refreshedConfig) {
+            _refreshedConfig = true;
+            unawaited(widget.appConfigController.refresh());
+          }
           return PortalShell(
             controller: PortalController(repository: widget.portalRepository),
             authController: widget.authController,
+            appConfigController: widget.appConfigController,
           );
         }
         return LoginScreen(
           authController: widget.authController,
           portalRepository: widget.portalRepository,
+          appConfigController: widget.appConfigController,
         );
       },
     );
