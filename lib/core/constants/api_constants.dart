@@ -7,4 +7,8 @@ class ApiConstants {
     'API_BASE_URL',
     defaultValue: 'https://api-staging.altkamel.ly/api/v1',
   );
+
+  /// A stalled upstream must never leave the mobile UI on an infinite loader.
+  static const requestTimeout = Duration(seconds: 15);
+  static const secureStorageTimeout = Duration(seconds: 5);
 }

@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/network/api_client.dart';
 
 class AuthRepository {
@@ -66,8 +68,16 @@ class AuthRepository {
   /// Whether a session token is already stored (used to skip straight to
   /// the portal on app start, mirroring the website's login-page check).
   Future<bool> isAuthenticated() async {
-    final token = await storage.read(key: 'auth_token');
-    return token != null && token.isNotEmpty;
+    try {
+      final token = await storage
+          .read(key: 'auth_token')
+          .timeout(ApiConstants.secureStorageTimeout);
+      return token != null && token.isNotEmpty;
+    } on TimeoutException {
+      // A keychain/storage problem must show the login screen, never an
+      // indefinite startup loader. It does not delete the existing session.
+      return false;
+    }
   }
 
   Future<void> logout() async {

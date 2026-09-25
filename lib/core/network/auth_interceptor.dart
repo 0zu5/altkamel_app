@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../constants/api_constants.dart';
+
 /// Attaches `Authorization: Bearer <token>` to every request once the user
 /// is logged in. Every SAS endpoint except `/auth/login` requires it.
 class AuthInterceptor extends Interceptor {
@@ -76,6 +78,9 @@ class AuthInterceptor extends Interceptor {
       final refreshClient = Dio(
         BaseOptions(
           baseUrl: dio.options.baseUrl,
+          connectTimeout: ApiConstants.requestTimeout,
+          receiveTimeout: ApiConstants.requestTimeout,
+          sendTimeout: ApiConstants.requestTimeout,
           headers: const {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
