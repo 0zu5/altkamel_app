@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -18,7 +20,17 @@ class AuthInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     if (!_isSessionEndpoint(options.path)) {
-      final token = await storage.read(key: 'auth_token');
+      String? token;
+      try {
+        token = await storage
+            .read(key: 'auth_token')
+            .timeout(ApiConstants.secureStorageTimeout);
+      } on TimeoutException {
+        // A damaged or blocked Android keystore must not leave every portal
+        // request waiting indefinitely. Continue without a token so Laravel
+        // returns a normal 401 and the UI can recover to sign-in.
+        token = null;
+      }
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
       }
@@ -70,8 +82,18 @@ class AuthInterceptor extends Interceptor {
   }
 
   Future<String?> _performRefresh() async {
-    final refreshToken = await storage.read(key: 'refresh_token');
-    final installationId = await storage.read(key: 'installation_id');
+    String? refreshToken;
+    String? installationId;
+    try {
+      refreshToken = await storage
+          .read(key: 'refresh_token')
+          .timeout(ApiConstants.secureStorageTimeout);
+      installationId = await storage
+          .read(key: 'installation_id')
+          .timeout(ApiConstants.secureStorageTimeout);
+    } on TimeoutException {
+      return null;
+    }
     if (refreshToken == null || installationId == null) return null;
 
     try {
