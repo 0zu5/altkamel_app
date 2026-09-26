@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "ly.altkamel.altkamel_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
