@@ -66,5 +66,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>يستخدم تطبيق التكامل موقعك الحالي لتسجيل موقع الهوائي لخدمة الدعم فقط، بعد موافقتك.</string>
 </dict>
 </plist>

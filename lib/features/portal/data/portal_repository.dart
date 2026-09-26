@@ -190,6 +190,48 @@ class PortalRepository {
     }
   }
 
+  /// Stores a customer-confirmed antenna location for the signed-in account.
+  /// Coordinates are acquired by the presentation layer only after explicit
+  /// consent and a platform permission grant.
+  Future<void> saveAntennaLocation({
+    required double latitude,
+    required double longitude,
+    required double accuracyMeters,
+  }) async {
+    try {
+      final account = _account(await _portal());
+      final sasAccountId = account['id'];
+      if (sasAccountId is! num && int.tryParse('$sasAccountId') == null) {
+        throw Exception('تعذر تحديد الحساب المراد حفظ موقعه.');
+      }
+
+      await apiClient.dio.post(
+        '/accounts/$sasAccountId/antenna-location',
+        data: {
+          'latitude': latitude,
+          'longitude': longitude,
+          'accuracy_meters': accuracyMeters,
+          'consent': true,
+        },
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw Exception(SasMessages.sessionExpired);
+      }
+      if (e.response?.statusCode == 403) {
+        throw Exception('لا تملك صلاحية حفظ موقع هذا الحساب.');
+      }
+      if (e.response?.statusCode == 422) {
+        throw Exception('تعذر التحقق من بيانات الموقع. حاول مرة أخرى.');
+      }
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout) {
+        throw Exception(SasMessages.networkError);
+      }
+      throw Exception('تعذر حفظ موقع الهوائي الآن. حاول مرة أخرى لاحقاً.');
+    }
+  }
+
   /// Mutating portal features are intentionally unavailable until Laravel
   /// implements and audits their dedicated endpoints.
   Future<void> redeemCode(String pin) async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
@@ -44,6 +45,89 @@ class DashboardTab extends StatelessWidget {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  Future<void> _captureAntennaLocation(BuildContext context) async {
+    final consent = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تحديد موقع الهوائي'),
+        content: const Text(
+          'سيتم استخدام موقعك الحالي مرة واحدة لحفظ موقع الهوائي لهذا الحساب، '
+          'بهدف مساعدة فريق الدعم. لا يتم تتبع موقعك في الخلفية. هل توافق؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('أوافق وأتابع'),
+          ),
+        ],
+      ),
+    );
+    if (consent != true || !context.mounted) return;
+
+    final enabled = await Geolocator.isLocationServiceEnabled();
+    if (!enabled) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('يرجى تشغيل خدمة الموقع ثم المحاولة مرة أخرى.'),
+          ),
+        );
+      }
+      return;
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              permission == LocationPermission.deniedForever
+                  ? 'تم منع إذن الموقع. فعّله من إعدادات الجهاز ثم أعد المحاولة.'
+                  : 'يلزم السماح بالوصول إلى الموقع لحفظ موقع الهوائي.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      if (!context.mounted) return;
+      final message = await controller.saveAntennaLocation(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        accuracyMeters: position.accuracy,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تعذر الحصول على موقعك الحالي. حاول في مكان مفتوح.'),
+          ),
+        );
+      }
     }
   }
 
@@ -103,6 +187,24 @@ class DashboardTab extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               _UsageCard(controller: controller),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: controller.antennaLocationLoading
+                    ? null
+                    : () => _captureAntennaLocation(context),
+                icon: controller.antennaLocationLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.location_on_outlined),
+                label: Text(
+                  controller.antennaLocationLoading
+                      ? 'جارٍ حفظ موقع الهوائي…'
+                      : 'تحديد موقع الهوائي للدعم',
+                ),
+              ),
               const SizedBox(height: 16),
               Row(
                 children: [

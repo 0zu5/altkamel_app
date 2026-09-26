@@ -40,6 +40,8 @@ class PortalController extends ChangeNotifier {
   bool rechargeLoading = false;
   CardRecharge? latestRecharge;
 
+  bool antennaLocationLoading = false;
+
   /// True once the session looks invalid (401 from a core call) so the UI
   /// can send the user back to the login screen.
   bool sessionExpired = false;
@@ -193,6 +195,28 @@ class PortalController extends ChangeNotifier {
   void clearLatestRecharge() {
     latestRecharge = null;
     notifyListeners();
+  }
+
+  Future<String> saveAntennaLocation({
+    required double latitude,
+    required double longitude,
+    required double accuracyMeters,
+  }) async {
+    antennaLocationLoading = true;
+    notifyListeners();
+    try {
+      await repository.saveAntennaLocation(
+        latitude: latitude,
+        longitude: longitude,
+        accuracyMeters: accuracyMeters,
+      );
+      return 'تم حفظ موقع الهوائي لتسهيل خدمة الدعم.';
+    } catch (e) {
+      return _messageOf(e, 'تعذر حفظ موقع الهوائي الآن.');
+    } finally {
+      antennaLocationLoading = false;
+      notifyListeners();
+    }
   }
 
   /// Returns an Arabic success/error message on completion.
