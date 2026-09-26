@@ -120,7 +120,9 @@ class DashboardTab extends StatelessWidget {
           context,
         ).showSnackBar(SnackBar(content: Text(message)));
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('Antenna location capture failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
