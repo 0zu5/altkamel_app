@@ -49,21 +49,45 @@ class PortalRepository {
 
   Future<UserResult> getUser() async {
     try {
-      final results = await Future.wait([
-        apiClient.dio.get('/auth/me'),
-        _portal(),
-      ]);
-      final response = results[0] as Response<dynamic>;
-      final body = response.data;
-      final data = body is Map ? body['data'] : null;
-      if (data is! Map) throw Exception(SasMessages.fetchUserError);
-      final account = _account(results[1] as Map<String, dynamic>);
+      // The portal payload is sufficient to render the dashboard. Some
+      // Android installations have intermittently delayed `/auth/me` while
+      // `/portal` already succeeds, so never let that optional profile call
+      // block the customer after a successful sign-in.
+      final account = _account(await _portal());
       final subscription = _map(account['subscription']);
       final package = _map(subscription['package']);
+
+      Map? profile;
+      try {
+        final response = await apiClient.dio
+            .get('/auth/me')
+            .timeout(const Duration(seconds: 5));
+        final body = response.data;
+        final data = body is Map ? body['data'] : null;
+        if (data is Map) profile = data;
+      } catch (_) {
+        // Fall through to the portal-based customer profile below.
+      }
+
+      final customer = _map(account['customer']);
       return UserResult(
         user: UserProfile.fromJson({
-          ...data,
-          'username': data['phone'] ?? '',
+          ...?profile,
+          'id': profile?['id'] ?? customer['id'] ?? account['customer_id'],
+          'username':
+              profile?['phone'] ??
+              customer['phone'] ??
+              account['username'] ??
+              '',
+          'name':
+              profile?['name'] ??
+              customer['name'] ??
+              account['name'] ??
+              account['username'],
+          'email': profile?['email'] ?? customer['email'] ?? account['email'],
+          'phone': profile?['phone'] ?? customer['phone'] ?? account['phone'],
+          'balance': _map(account['billing'])['balance'],
+          'auto_renew': account['auto_renew'],
           'profile_id': subscription['profile_id'] ?? package['id'],
         }),
         permissions: const <String>[],
