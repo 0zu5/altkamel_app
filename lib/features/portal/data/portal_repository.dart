@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 
 import '../../../core/constants/sas_messages.dart';
@@ -361,8 +363,18 @@ class PortalRepository {
     if (_portalCache != null) return Future.value(_portalCache);
     if (_pendingPortal != null) return _pendingPortal!;
 
+    // Dio's transport timeouts cover normal sockets, but iOS can leave a
+    // request pending while the app resumes or its network stack changes.
+    // This outer deadline guarantees the dashboard can leave its loading
+    // state and offer a retry even in that platform-level failure mode.
     _pendingPortal = apiClient.dio
         .get('/portal')
+        .timeout(
+          const Duration(seconds: 12),
+          onTimeout: () => throw TimeoutException(
+            'تعذر تحميل بيانات الحساب. تحقق من الاتصال ثم أعد المحاولة.',
+          ),
+        )
         .then((response) {
           final body = response.data;
           final data = body is Map ? body['data'] : null;
