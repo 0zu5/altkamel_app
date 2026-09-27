@@ -133,6 +133,37 @@ class DashboardTab extends StatelessWidget {
     }
   }
 
+  Future<void> _removeAntennaLocation(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('إزالة موقع الهوائي'),
+        content: const Text(
+          'سيُزال موقع الهوائي من شاشة الدعم فوراً. يُحتفظ به لمدة محدودة '
+          'لأغراض الدعم ثم يُحذف نهائياً. هل تريد المتابعة؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton.tonal(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('إزالة الموقع'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final message = await controller.removeAntennaLocation();
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -206,6 +237,14 @@ class DashboardTab extends StatelessWidget {
                       ? 'جارٍ حفظ موقع الهوائي…'
                       : 'تحديد موقع الهوائي للدعم',
                 ),
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: controller.antennaLocationLoading
+                    ? null
+                    : () => _removeAntennaLocation(context),
+                icon: const Icon(Icons.location_off_outlined),
+                label: const Text('إزالة موقع الهوائي المحفوظ'),
               ),
               const SizedBox(height: 16),
               Row(

@@ -227,6 +227,20 @@ class PortalController extends ChangeNotifier {
     }
   }
 
+  Future<String> removeAntennaLocation() async {
+    antennaLocationLoading = true;
+    notifyListeners();
+    try {
+      await repository.removeAntennaLocation();
+      return 'تمت إزالة موقع الهوائي من حسابك ومن شاشة الدعم.';
+    } catch (e) {
+      return _messageOf(e, 'تعذر إزالة موقع الهوائي الآن.');
+    } finally {
+      antennaLocationLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Returns an Arabic success/error message on completion.
   Future<String> redeemCode(String pin) async {
     actionLoading = true;

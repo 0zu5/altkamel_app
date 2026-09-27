@@ -256,6 +256,32 @@ class PortalRepository {
     }
   }
 
+  /// Removes the customer's active support location. Laravel retires it from
+  /// support views immediately and applies the server-side retention policy.
+  Future<void> removeAntennaLocation() async {
+    try {
+      final account = _account(await _portal());
+      final sasAccountId = account['id'];
+      if (sasAccountId is! num && int.tryParse('$sasAccountId') == null) {
+        throw Exception('تعذر تحديد الحساب المراد إزالة موقعه.');
+      }
+
+      await apiClient.dio.delete('/accounts/$sasAccountId/antenna-location');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw Exception(SasMessages.sessionExpired);
+      }
+      if (e.response?.statusCode == 403) {
+        throw Exception('لا تملك صلاحية إزالة موقع هذا الحساب.');
+      }
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout) {
+        throw Exception(SasMessages.networkError);
+      }
+      throw Exception('تعذر إزالة موقع الهوائي الآن. حاول مرة أخرى لاحقاً.');
+    }
+  }
+
   /// Mutating portal features are intentionally unavailable until Laravel
   /// implements and audits their dedicated endpoints.
   Future<void> redeemCode(String pin) async {
