@@ -83,11 +83,17 @@ class PortalController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final results = await Future.wait([
-        repository.getUser(),
-        repository.getBalance(),
-        repository.getPackages(),
-      ]);
+      final results =
+          await Future.wait([
+            repository.getUser(),
+            repository.getBalance(),
+            repository.getPackages(),
+          ]).timeout(
+            const Duration(seconds: 25),
+            onTimeout: () => throw TimeoutException(
+              'تعذر تحميل بيانات الحساب في الوقت المحدد. تحقق من الاتصال ثم أعد المحاولة.',
+            ),
+          );
       final userResult = results[0] as UserResult;
       user = userResult.user;
       permissions = userResult.permissions;
@@ -101,7 +107,9 @@ class PortalController extends ChangeNotifier {
       } catch (_) {
         service = null;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Portal initial load failed: $e');
+      debugPrintStack(stackTrace: stackTrace);
       final message = e.toString().replaceFirst('Exception: ', '').trim();
       if (message == SasMessages.sessionExpired) {
         sessionExpired = true;
