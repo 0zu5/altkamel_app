@@ -41,6 +41,7 @@ class PortalController extends ChangeNotifier {
   CardRecharge? latestRecharge;
 
   bool antennaLocationLoading = false;
+  bool antennaLocationSaved = false;
 
   /// True once the session looks invalid (401 from a core call) so the UI
   /// can send the user back to the login screen.
@@ -88,6 +89,7 @@ class PortalController extends ChangeNotifier {
             repository.getUser(),
             repository.getBalance(),
             repository.getPackages(),
+            repository.hasSavedAntennaLocation(),
           ]).timeout(
             const Duration(seconds: 25),
             onTimeout: () => throw TimeoutException(
@@ -99,6 +101,7 @@ class PortalController extends ChangeNotifier {
       permissions = userResult.permissions;
       balance = results[1] as BalanceInfo;
       packages = results[2] as List<PackageInfo>;
+      antennaLocationSaved = results[3] as bool;
 
       // The live subscription check is best-effort: if it fails we still
       // have `/user`'s profile_id as a fallback.
@@ -218,6 +221,7 @@ class PortalController extends ChangeNotifier {
         longitude: longitude,
         accuracyMeters: accuracyMeters,
       );
+      antennaLocationSaved = true;
       return 'تم حفظ موقع الهوائي لتسهيل خدمة الدعم.';
     } catch (e) {
       return _messageOf(e, 'تعذر حفظ موقع الهوائي الآن.');
@@ -232,6 +236,7 @@ class PortalController extends ChangeNotifier {
     notifyListeners();
     try {
       await repository.removeAntennaLocation();
+      antennaLocationSaved = false;
       return 'تمت إزالة موقع الهوائي من حسابك ومن شاشة الدعم.';
     } catch (e) {
       return _messageOf(e, 'تعذر إزالة موقع الهوائي الآن.');

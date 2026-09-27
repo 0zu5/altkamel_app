@@ -138,6 +138,13 @@ class PortalRepository {
     }
   }
 
+  /// Only the existence and save time are exposed to the customer. Raw
+  /// antenna coordinates remain unavailable outside the support workflow.
+  Future<bool> hasSavedAntennaLocation() async {
+    final location = _map(_account(await _portal())['antenna_location']);
+    return location['saved'] == true;
+  }
+
   Future<InvoicesPage> getInvoices({int page = 1, int count = 10}) async {
     try {
       final list = _account(await _portal())['invoices'];

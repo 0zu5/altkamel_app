@@ -235,17 +235,21 @@ class DashboardTab extends StatelessWidget {
                 label: Text(
                   controller.antennaLocationLoading
                       ? 'جارٍ حفظ موقع الهوائي…'
+                      : controller.antennaLocationSaved
+                      ? 'تحديث موقع الهوائي للدعم'
                       : 'تحديد موقع الهوائي للدعم',
                 ),
               ),
-              const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: controller.antennaLocationLoading
-                    ? null
-                    : () => _removeAntennaLocation(context),
-                icon: const Icon(Icons.location_off_outlined),
-                label: const Text('إزالة موقع الهوائي المحفوظ'),
-              ),
+              if (controller.antennaLocationSaved) ...[
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: controller.antennaLocationLoading
+                      ? null
+                      : () => _removeAntennaLocation(context),
+                  icon: const Icon(Icons.location_off_outlined),
+                  label: const Text('إزالة موقع الهوائي المحفوظ'),
+                ),
+              ],
               const SizedBox(height: 16),
               Row(
                 children: [
