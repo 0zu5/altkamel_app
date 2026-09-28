@@ -84,32 +84,18 @@ class PortalController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final results =
-          await Future.wait([
-            repository.getUser(),
-            repository.getBalance(),
-            repository.getPackages(),
-            repository.hasSavedAntennaLocation(),
-          ]).timeout(
-            const Duration(seconds: 25),
-            onTimeout: () => throw TimeoutException(
-              'تعذر تحميل بيانات الحساب في الوقت المحدد. تحقق من الاتصال ثم أعد المحاولة.',
-            ),
-          );
-      final userResult = results[0] as UserResult;
-      user = userResult.user;
-      permissions = userResult.permissions;
-      balance = results[1] as BalanceInfo;
-      packages = results[2] as List<PackageInfo>;
-      antennaLocationSaved = results[3] as bool;
-
-      // The live subscription check is best-effort: if it fails we still
-      // have `/user`'s profile_id as a fallback.
-      try {
-        service = await repository.getCurrentService();
-      } catch (_) {
-        service = null;
-      }
+      final initial = await repository.getInitialData().timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException(
+          'تعذر تحميل بيانات الحساب في الوقت المحدد. تحقق من الاتصال ثم أعد المحاولة.',
+        ),
+      );
+      user = initial.userResult.user;
+      permissions = initial.userResult.permissions;
+      balance = initial.balance;
+      packages = initial.packages;
+      antennaLocationSaved = initial.antennaLocationSaved;
+      service = initial.service;
     } catch (e, stackTrace) {
       debugPrint('Portal initial load failed: $e');
       debugPrintStack(stackTrace: stackTrace);

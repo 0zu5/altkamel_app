@@ -13,6 +13,26 @@ class UserResult {
   const UserResult({required this.user, required this.permissions});
 }
 
+/// Everything required to paint the first portal screen. Keeping this as one
+/// result is intentional: `/portal` is a single Laravel response, so initial
+/// navigation must not depend on several concurrent readers of the same
+/// request completing in the right order.
+class PortalInitialData {
+  final UserResult userResult;
+  final BalanceInfo balance;
+  final ServiceInfo? service;
+  final List<PackageInfo> packages;
+  final bool antennaLocationSaved;
+
+  const PortalInitialData({
+    required this.userResult,
+    required this.balance,
+    required this.service,
+    required this.packages,
+    required this.antennaLocationSaved,
+  });
+}
+
 class InvoicesPage {
   final List<InvoiceInfo> invoices;
   final int currentPage;
@@ -47,6 +67,62 @@ class PortalRepository {
 
   void invalidatePortalCache() {
     _portalCache = null;
+  }
+
+  /// Loads the dashboard's essential data from one bounded `/portal` call.
+  ///
+  /// Do not use [getUser], [getBalance], and [getPackages] concurrently here:
+  /// those are convenient individual accessors for later tabs, but fanning
+  /// them out during Android startup made a failed shared request capable of
+  /// leaving the shell on its loading state.
+  Future<PortalInitialData> getInitialData() async {
+    try {
+      final portal = await _portal();
+      final account = _account(portal);
+      final customer = _map(account['customer']);
+      final billing = _map(account['billing']);
+      final subscription = _map(account['subscription']);
+      final package = _map(subscription['package']);
+      final rawPackages = portal['packages'];
+      if (rawPackages is! List) {
+        throw Exception(SasMessages.fetchPackagesError);
+      }
+
+      final user = UserProfile.fromJson({
+        'id': customer['id'] ?? account['customer_id'],
+        'username': customer['phone'] ?? account['username'] ?? '',
+        'name': customer['name'] ?? account['name'] ?? account['username'],
+        'email': customer['email'] ?? account['email'],
+        'phone': customer['phone'] ?? account['phone'],
+        'balance': billing['balance'],
+        'auto_renew': account['auto_renew'],
+        'profile_id': subscription['profile_id'] ?? package['id'],
+      });
+      final service = subscription.isEmpty
+          ? null
+          : ServiceInfo.fromJson({
+              'profile_id': subscription['profile_id'] ?? package['id'],
+              'profile_name': package['name'],
+              'expiration': subscription['expires_at'],
+              'status':
+                  subscription['status']?.toString().toLowerCase() == 'active',
+              'price': subscription['price'] ?? package['price'],
+            });
+      final location = _map(account['antenna_location']);
+
+      return PortalInitialData(
+        userResult: UserResult(user: user, permissions: const <String>[]),
+        balance: BalanceInfo.fromJson(billing),
+        service: service,
+        packages: rawPackages
+            .whereType<Map>()
+            .map((item) => PackageInfo.fromJson(item))
+            .toList(),
+        antennaLocationSaved: location['saved'] == true,
+      );
+    } on DioException catch (e) {
+      throw Exception(_friendlyError(e, SasMessages.fetchUserError));
+    }
   }
 
   Future<UserResult> getUser() async {
