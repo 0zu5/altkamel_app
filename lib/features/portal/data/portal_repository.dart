@@ -67,6 +67,10 @@ class PortalRepository {
 
   void invalidatePortalCache() {
     _portalCache = null;
+    // A caller retrying after a platform-level stalled request must be able
+    // to create a new request. The old request may still complete later, but
+    // it can no longer keep the next screen load attached to it.
+    _pendingPortal = null;
   }
 
   /// Loads the dashboard's essential data from one bounded `/portal` call.

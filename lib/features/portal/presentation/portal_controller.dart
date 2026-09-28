@@ -16,8 +16,12 @@ class PortalController extends ChangeNotifier {
 
   PortalController({required this.repository});
 
-  bool isLoading = true;
+  // A freshly constructed controller has not started any work yet. Starting
+  // false prevents a blank permanent spinner if Flutter ever restores the
+  // shell without running its initial lifecycle callback.
+  bool isLoading = false;
   String? loadError;
+  int _loadAttempt = 0;
 
   UserProfile? user;
   List<String> permissions = const [];
@@ -77,11 +81,24 @@ class PortalController extends ChangeNotifier {
   bool get isAccountActive => remainingDays > 0 || (service?.status ?? false);
 
   Future<void> loadAll() async {
+    final attempt = ++_loadAttempt;
     isLoading = true;
     loadError = null;
     sessionExpired = false;
     repository.invalidatePortalCache();
     notifyListeners();
+
+    // This deliberately sits outside the repository future. It is the final
+    // UI safety net for Android platform or plugin failures that prevent a
+    // future's own timeout callback from being delivered. A customer must
+    // always receive a retry affordance instead of an infinite loader.
+    final watchdog = Timer(const Duration(seconds: 18), () {
+      if (attempt != _loadAttempt || !isLoading) return;
+      isLoading = false;
+      loadError =
+          'استغرق تحميل بيانات الحساب وقتاً أطول من المتوقع. تحقق من الاتصال ثم أعد المحاولة.';
+      notifyListeners();
+    });
 
     try {
       final initial = await repository.getInitialData().timeout(
@@ -106,8 +123,11 @@ class PortalController extends ChangeNotifier {
         loadError = message.isNotEmpty ? message : SasMessages.unexpectedError;
       }
     } finally {
-      isLoading = false;
-      notifyListeners();
+      watchdog.cancel();
+      if (attempt == _loadAttempt) {
+        isLoading = false;
+        notifyListeners();
+      }
     }
 
     // Fetched separately so the main screen isn't blocked on them.
