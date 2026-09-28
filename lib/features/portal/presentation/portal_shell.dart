@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/app_config/app_config_controller.dart';
@@ -53,6 +55,17 @@ class _PortalShellState extends State<PortalShell> {
     }
   }
 
+  void _selectTab(int index) {
+    setState(() => _tabIndex = index);
+    // A tab must never present an empty profile/invoice view simply because
+    // the first dashboard request failed while Android was reconnecting.
+    if (widget.controller.user == null && !widget.controller.isLoading) {
+      unawaited(widget.controller.loadAll());
+    } else if (index == 2 && !widget.controller.invoicesLoading) {
+      unawaited(widget.controller.loadInvoices());
+    }
+  }
+
   Future<void> _logout() async {
     await widget.authController.logout();
     if (mounted) _goToLogin();
@@ -93,7 +106,7 @@ class _PortalShellState extends State<PortalShell> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tabIndex,
-        onDestinationSelected: (i) => setState(() => _tabIndex = i),
+        onDestinationSelected: _selectTab,
         indicatorColor: AppColors.indigo.withValues(alpha: 0.12),
         destinations: const [
           NavigationDestination(

@@ -80,7 +80,7 @@ class PortalController extends ChangeNotifier {
 
   bool get isAccountActive => remainingDays > 0 || (service?.status ?? false);
 
-  Future<void> loadAll() async {
+  Future<void> loadAll({bool retryOnce = true}) async {
     final attempt = ++_loadAttempt;
     isLoading = true;
     loadError = null;
@@ -121,6 +121,17 @@ class PortalController extends ChangeNotifier {
         sessionExpired = true;
       } else {
         loadError = message.isNotEmpty ? message : SasMessages.unexpectedError;
+        // Android radios can need a moment after sign-in before the first
+        // authenticated request is usable. Retry the initial portal request
+        // once automatically, rather than requiring the customer to pull to
+        // refresh a screen that has no data yet.
+        if (retryOnce && attempt == _loadAttempt) {
+          await Future<void>.delayed(const Duration(milliseconds: 750));
+          if (attempt == _loadAttempt) {
+            unawaited(loadAll(retryOnce: false));
+            return;
+          }
+        }
       }
     } finally {
       watchdog.cancel();

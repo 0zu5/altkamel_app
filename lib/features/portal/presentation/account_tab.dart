@@ -66,6 +66,36 @@ class AccountTab extends StatelessWidget {
       listenable: controller,
       builder: (context, _) {
         final user = controller.user;
+        if (user == null) {
+          if (controller.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.person_off_outlined,
+                    size: 48,
+                    color: AppColors.slate400,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    controller.loadError ?? 'تعذر تحميل بيانات الحساب.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: controller.loadAll,
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
           children: [
@@ -100,13 +130,13 @@ class AccountTab extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              user?.displayName ?? '',
+                              user.displayName,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
                             Text(
-                              user?.phone ?? user?.username ?? '',
+                              user.phone ?? user.username,
                               style: const TextStyle(
                                 color: AppColors.slate500,
                                 fontSize: 12,
@@ -121,18 +151,18 @@ class AccountTab extends StatelessWidget {
                   _InfoRow(
                     icon: Icons.email_outlined,
                     label: 'البريد الإلكتروني',
-                    value: user?.email,
+                    value: user.email,
                   ),
                   _InfoRow(
                     icon: Icons.phone_outlined,
                     label: 'الهاتف',
-                    value: user?.phone,
+                    value: user.phone,
                   ),
                   _InfoRow(
                     icon: Icons.calendar_today_outlined,
                     label: 'تاريخ التسجيل',
-                    value: user?.registeredOn != null
-                        ? Formatters.arabicDate(user!.registeredOn)
+                    value: user.registeredOn != null
+                        ? Formatters.arabicDate(user.registeredOn)
                         : null,
                   ),
                 ],
@@ -154,7 +184,7 @@ class AccountTab extends StatelessWidget {
                     ),
                   ),
                   Switch(
-                    value: user?.autoRenew ?? false,
+                    value: user.autoRenew,
                     activeThumbColor: AppColors.indigo,
                     onChanged: (value) async {
                       final message = await controller.toggleAutoRenew(value);
