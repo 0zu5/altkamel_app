@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'core/app_config/app_config_controller.dart';
@@ -13,8 +15,14 @@ import 'features/portal/data/portal_repository.dart';
 import 'features/portal/presentation/portal_controller.dart';
 import 'features/portal/presentation/portal_shell.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Android is configured with the checked-in google-services.json. iOS is
+  // deliberately postponed until its APNs/Firebase enrollment is available.
+  if (Platform.isAndroid) {
+    await Firebase.initializeApp();
+  }
 
   // Initialize Core Dependencies
   const storage = FlutterSecureStorage();

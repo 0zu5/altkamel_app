@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/constants/api_constants.dart';
@@ -11,6 +12,7 @@ import '../../../core/network/api_client.dart';
 class AuthRepository {
   final ApiClient apiClient;
   final FlutterSecureStorage storage;
+  StreamSubscription<String>? _tokenRefreshSubscription;
 
   AuthRepository({required this.apiClient, required this.storage});
 
@@ -42,6 +44,7 @@ class AuthRepository {
               key: 'refresh_token',
               value: refreshToken.toString(),
             );
+            unawaited(_registerAndroidPushToken(installationId));
             return true;
           }
 
@@ -105,6 +108,64 @@ class AuthRepository {
         '${part(0, 4)}-${part(4, 6)}-${part(6, 8)}-${part(8, 10)}-${part(10, 16)}';
     await storage.write(key: 'installation_id', value: created);
     return created;
+  }
+
+  Future<void> _registerAndroidPushToken(String installationId) async {
+    if (!Platform.isAndroid) return;
+
+    try {
+      final messaging = FirebaseMessaging.instance;
+      final permission = await messaging.requestPermission();
+      final allowed =
+          permission.authorizationStatus == AuthorizationStatus.authorized ||
+          permission.authorizationStatus == AuthorizationStatus.provisional;
+
+      if (!allowed) {
+        await _syncPushRegistration(
+          installationId: installationId,
+          token: null,
+          enabled: false,
+        );
+        return;
+      }
+
+      final token = await messaging.getToken();
+      if (token == null || token.isEmpty) return;
+
+      await _syncPushRegistration(
+        installationId: installationId,
+        token: token,
+        enabled: true,
+      );
+
+      _tokenRefreshSubscription ??= messaging.onTokenRefresh.listen((token) {
+        unawaited(
+          _syncPushRegistration(
+            installationId: installationId,
+            token: token,
+            enabled: true,
+          ),
+        );
+      });
+    } catch (error) {
+      // Push registration must never prevent a successful SAS login.
+      debugPrint('Push registration unavailable: $error');
+    }
+  }
+
+  Future<void> _syncPushRegistration({
+    required String installationId,
+    required String? token,
+    required bool enabled,
+  }) async {
+    await apiClient.dio.put(
+      '/device/push-token',
+      data: {
+        'installation_id': installationId,
+        'push_token': token,
+        'notifications_enabled': enabled,
+      },
+    );
   }
 
   String get _platform => Platform.isIOS ? 'ios' : 'android';
