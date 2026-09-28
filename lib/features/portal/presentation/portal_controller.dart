@@ -20,6 +20,7 @@ class PortalController extends ChangeNotifier {
   // false prevents a blank permanent spinner if Flutter ever restores the
   // shell without running its initial lifecycle callback.
   bool isLoading = false;
+  bool identityLoading = false;
   String? loadError;
   int _loadAttempt = 0;
 
@@ -113,6 +114,7 @@ class PortalController extends ChangeNotifier {
       packages = initial.packages;
       antennaLocationSaved = initial.antennaLocationSaved;
       service = initial.service;
+      unawaited(_refreshIdentity());
     } catch (e, stackTrace) {
       debugPrint('Portal initial load failed: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -144,6 +146,29 @@ class PortalController extends ChangeNotifier {
     // Fetched separately so the main screen isn't blocked on them.
     unawaited(loadInvoices());
     unawaited(loadTraffic());
+  }
+
+  Future<void> _refreshIdentity() async {
+    identityLoading = true;
+    notifyListeners();
+    try {
+      final identity = await repository.getAuthenticatedProfile();
+      final current = user;
+      if (identity == null || current == null) return;
+      user = current.copyWith(
+        id: identity.id,
+        username: identity.username.isNotEmpty ? identity.username : null,
+        name: identity.name,
+        firstname: identity.firstname,
+        lastname: identity.lastname,
+        email: identity.email,
+        phone: identity.phone,
+        registeredOn: identity.registeredOn,
+      );
+    } finally {
+      identityLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> loadTraffic() async {

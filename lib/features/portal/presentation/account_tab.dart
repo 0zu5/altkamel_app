@@ -130,7 +130,11 @@ class AccountTab extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              user.displayName,
+                              user.displayName.isNotEmpty
+                                  ? user.displayName
+                                  : controller.identityLoading
+                                  ? 'جارٍ تحميل بيانات الحساب…'
+                                  : 'غير محدد',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w900,
                               ),
@@ -151,12 +155,20 @@ class AccountTab extends StatelessWidget {
                   _InfoRow(
                     icon: Icons.email_outlined,
                     label: 'البريد الإلكتروني',
-                    value: user.email,
+                    value:
+                        user.email ??
+                        (controller.identityLoading ? 'جارٍ التحميل…' : null),
                   ),
                   _InfoRow(
                     icon: Icons.phone_outlined,
                     label: 'الهاتف',
-                    value: user.phone,
+                    value:
+                        user.phone ??
+                        (user.username.isNotEmpty
+                            ? user.username
+                            : controller.identityLoading
+                            ? 'جارٍ التحميل…'
+                            : null),
                   ),
                   _InfoRow(
                     icon: Icons.calendar_today_outlined,

@@ -101,6 +101,7 @@ class PortalRepository {
         'balance': billing['balance'],
         'auto_renew': account['auto_renew'],
         'profile_id': subscription['profile_id'] ?? package['id'],
+        'registered_on': customer['created_at'] ?? account['created_at'],
       });
       final service = subscription.isEmpty
           ? null
@@ -126,6 +127,25 @@ class PortalRepository {
       );
     } on DioException catch (e) {
       throw Exception(_friendlyError(e, SasMessages.fetchUserError));
+    }
+  }
+
+  /// `/portal` is optimized for billing and subscription data. The signed-in
+  /// customer identity is returned separately by Laravel and is refreshed in
+  /// the background so a slow profile request never delays the dashboard.
+  Future<UserProfile?> getAuthenticatedProfile() async {
+    try {
+      final response = await apiClient.dio
+          .get('/auth/me')
+          .timeout(const Duration(seconds: 5));
+      final body = response.data;
+      final data = body is Map ? body['data'] : null;
+      if (data is! Map) return null;
+      return UserProfile.fromJson(Map<String, dynamic>.from(data));
+    } on DioException {
+      return null;
+    } on TimeoutException {
+      return null;
     }
   }
 

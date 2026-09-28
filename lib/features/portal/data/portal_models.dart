@@ -78,23 +78,34 @@ class UserProfile {
       balance: _toNum(json['balance']),
       autoRenew: _toBool(json['auto_renew']),
       profileId: json['profile_id'],
-      registeredOn: _toStringOrNull(json['registered_on']?['date']),
+      registeredOn: _registeredOn(json['registered_on'] ?? json['created_at']),
     );
   }
 
-  UserProfile copyWith({dynamic profileId, bool? autoRenew}) {
+  UserProfile copyWith({
+    int? id,
+    String? username,
+    String? name,
+    String? firstname,
+    String? lastname,
+    String? email,
+    String? phone,
+    String? registeredOn,
+    dynamic profileId,
+    bool? autoRenew,
+  }) {
     return UserProfile(
-      id: id,
-      username: username,
-      name: name,
-      firstname: firstname,
-      lastname: lastname,
-      email: email,
-      phone: phone,
+      id: id ?? this.id,
+      username: username ?? this.username,
+      name: name ?? this.name,
+      firstname: firstname ?? this.firstname,
+      lastname: lastname ?? this.lastname,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
       balance: balance,
       autoRenew: autoRenew ?? this.autoRenew,
       profileId: profileId ?? this.profileId,
-      registeredOn: registeredOn,
+      registeredOn: registeredOn ?? this.registeredOn,
     );
   }
 
@@ -105,6 +116,11 @@ class UserProfile {
     }
     return username;
   }
+}
+
+String? _registeredOn(dynamic value) {
+  if (value is Map) return _toStringOrNull(value['date'] ?? value['value']);
+  return _toStringOrNull(value);
 }
 
 /// GET /dashboard
