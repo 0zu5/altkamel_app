@@ -83,6 +83,7 @@ class DashboardTab extends StatelessWidget {
     final message = await controller.saveAntennaLocation(
       latitude: selected.latitude,
       longitude: selected.longitude,
+      accuracyMeters: selected.accuracyMeters,
     );
     if (context.mounted) {
       ScaffoldMessenger.of(
