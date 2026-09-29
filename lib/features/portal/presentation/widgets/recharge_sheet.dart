@@ -6,6 +6,60 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/portal_models.dart';
 import '../portal_controller.dart';
+import 'redeem_dialog.dart';
+
+/// Lets the customer deliberately choose a recharge method. Voucher codes
+/// stay inside the app; card payments always continue to the trusted gateway.
+Future<void> showRechargeOptionsSheet(
+  BuildContext context,
+  PortalController controller,
+) {
+  return showModalBottomSheet<void>(
+    context: context,
+    builder: (sheetContext) => SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'اختر طريقة الشحن',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.qr_code_scanner_rounded),
+              title: const Text('قسيمة شحن'),
+              subtitle: const Text('أدخل رمز القسيمة أو امسح رمز QR'),
+              onTap: () async {
+                Navigator.of(sheetContext).pop();
+                final message = await showRedeemDialog(context, controller);
+                if (message != null && context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(message)));
+                }
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.credit_card_rounded),
+              title: const Text('دفع بالبطاقة'),
+              subtitle: const Text('إتمام الدفع الآمن عبر مواملة'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                showRechargeSheet(context, controller);
+              },
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
 /// Starts a card recharge through Laravel, then keeps the payment status in
 /// view while the browser-hosted Moamalat checkout is completing.

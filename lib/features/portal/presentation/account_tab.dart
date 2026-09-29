@@ -5,7 +5,7 @@ import '../../../core/theme/theme_mode_controller.dart';
 import '../../../core/utils/formatters.dart';
 import 'portal_controller.dart';
 import 'widgets/portal_card.dart';
-import 'widgets/redeem_dialog.dart';
+import 'widgets/recharge_sheet.dart';
 
 /// Profile info + account actions: redeem a code, toggle auto-renew,
 /// change password, and log out.
@@ -20,15 +20,6 @@ class AccountTab extends StatelessWidget {
     required this.onLogout,
     required this.themeModeController,
   });
-
-  Future<void> _openRedeemDialog(BuildContext context) async {
-    final message = await showRedeemDialog(context, controller);
-    if (message != null && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-    }
-  }
 
   Future<void> _openChangePasswordDialog(BuildContext context) async {
     final message = await showDialog<String?>(
@@ -245,7 +236,7 @@ class AccountTab extends StatelessWidget {
                   _ActionTile(
                     icon: Icons.card_giftcard_outlined,
                     label: 'شحن رصيد',
-                    onTap: () => _openRedeemDialog(context),
+                    onTap: () => showRechargeOptionsSheet(context, controller),
                   ),
                   const Divider(height: 1),
                   _ActionTile(

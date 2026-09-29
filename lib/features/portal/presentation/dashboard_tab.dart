@@ -223,7 +223,8 @@ class DashboardTab extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => showRechargeSheet(context, controller),
+                      onPressed: () =>
+                          showRechargeOptionsSheet(context, controller),
                       icon: const Icon(Icons.credit_card_rounded),
                       label: const Text('شحن رصيد'),
                     ),
