@@ -205,6 +205,7 @@ class TowerInfo {
   final double longitude;
   final String? address;
   final String? description;
+  final int? distanceMeters;
 
   const TowerInfo({
     required this.id,
@@ -214,6 +215,7 @@ class TowerInfo {
     required this.longitude,
     this.address,
     this.description,
+    this.distanceMeters,
   });
 
   factory TowerInfo.fromJson(Map json) => TowerInfo(
@@ -224,6 +226,9 @@ class TowerInfo {
     longitude: _toNum(json['longitude']).toDouble(),
     address: _toStringOrNull(json['address']),
     description: _toStringOrNull(json['description']),
+    distanceMeters: json['distance_meters'] == null
+        ? null
+        : _toNum(json['distance_meters']).toInt(),
   );
 }
 

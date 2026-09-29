@@ -152,6 +152,17 @@ class _TowerCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (tower.distanceMeters != null) ...[
+                    const SizedBox(height: 5),
+                    Text(
+                      _distanceLabel(tower.distanceMeters!),
+                      style: const TextStyle(
+                        color: AppColors.indigo,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -159,5 +170,12 @@ class _TowerCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _distanceLabel(int meters) {
+    if (meters < 1000) {
+      return 'يبعد $meters متر عن موقع الهوائي المحفوظ';
+    }
+    return 'يبعد ${(meters / 1000).toStringAsFixed(1)} كم عن موقع الهوائي المحفوظ';
   }
 }
