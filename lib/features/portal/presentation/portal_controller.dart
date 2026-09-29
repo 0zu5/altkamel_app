@@ -253,7 +253,7 @@ class PortalController extends ChangeNotifier {
   Future<String> saveAntennaLocation({
     required double latitude,
     required double longitude,
-    required double accuracyMeters,
+    double? accuracyMeters,
   }) async {
     antennaLocationLoading = true;
     notifyListeners();

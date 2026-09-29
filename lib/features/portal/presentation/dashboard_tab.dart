@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import 'antenna_location_picker.dart';
 import 'portal_controller.dart';
 import 'widgets/portal_card.dart';
 import 'widgets/recharge_sheet.dart';
@@ -54,8 +54,8 @@ class DashboardTab extends StatelessWidget {
       builder: (context) => AlertDialog(
         title: const Text('تحديد موقع الهوائي'),
         content: const Text(
-          'سيتم استخدام موقعك الحالي مرة واحدة لحفظ موقع الهوائي لهذا الحساب، '
-          'بهدف مساعدة فريق الدعم. لا يتم تتبع موقعك في الخلفية. هل توافق؟',
+          'اختر موقع الهوائي يدوياً على الخريطة لحفظه لهذا الحساب بهدف مساعدة '
+          'فريق الدعم. لا نطلب موقع جهازك ولا نتتبعك في الخلفية. هل توافق؟',
         ),
         actions: [
           TextButton(
@@ -64,72 +64,26 @@ class DashboardTab extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('أوافق وأتابع'),
+            child: const Text('أوافق وأختار الموقع'),
           ),
         ],
       ),
     );
     if (consent != true || !context.mounted) return;
 
-    final enabled = await Geolocator.isLocationServiceEnabled();
-    if (!enabled) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('يرجى تشغيل خدمة الموقع ثم المحاولة مرة أخرى.'),
-          ),
-        );
-      }
-      return;
-    }
+    final selected = await Navigator.of(context).push<AntennaMapPoint>(
+      MaterialPageRoute(builder: (_) => const AntennaLocationPicker()),
+    );
+    if (selected == null || !context.mounted) return;
 
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              permission == LocationPermission.deniedForever
-                  ? 'تم منع إذن الموقع. فعّله من إعدادات الجهاز ثم أعد المحاولة.'
-                  : 'يلزم السماح بالوصول إلى الموقع لحفظ موقع الهوائي.',
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
-    try {
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-      if (!context.mounted) return;
-      final message = await controller.saveAntennaLocation(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        accuracyMeters: position.accuracy,
-      );
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
-      }
-    } catch (error, stackTrace) {
-      debugPrint('Antenna location capture failed: $error');
-      debugPrintStack(stackTrace: stackTrace);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تعذر الحصول على موقعك الحالي. حاول في مكان مفتوح.'),
-          ),
-        );
-      }
+    final message = await controller.saveAntennaLocation(
+      latitude: selected.latitude,
+      longitude: selected.longitude,
+    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 

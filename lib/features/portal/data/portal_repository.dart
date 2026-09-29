@@ -324,12 +324,12 @@ class PortalRepository {
   }
 
   /// Stores a customer-confirmed antenna location for the signed-in account.
-  /// Coordinates are acquired by the presentation layer only after explicit
-  /// consent and a platform permission grant.
+  /// Coordinates are selected by the customer after explicit consent. This
+  /// deliberately does not require their current device location.
   Future<void> saveAntennaLocation({
     required double latitude,
     required double longitude,
-    required double accuracyMeters,
+    double? accuracyMeters,
   }) async {
     try {
       final account = _account(await _portal());
@@ -338,14 +338,19 @@ class PortalRepository {
         throw Exception('تعذر تحديد الحساب المراد حفظ موقعه.');
       }
 
+      final payload = <String, dynamic>{
+        'latitude': latitude,
+        'longitude': longitude,
+        'consent': true,
+        'label': 'موقع حدده العميل',
+      };
+      if (accuracyMeters != null) {
+        payload['accuracy_meters'] = accuracyMeters.round();
+      }
+
       await apiClient.dio.post(
         '/accounts/$sasAccountId/antenna-location',
-        data: {
-          'latitude': latitude,
-          'longitude': longitude,
-          'accuracy_meters': accuracyMeters,
-          'consent': true,
-        },
+        data: payload,
       );
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
