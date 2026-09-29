@@ -62,6 +62,7 @@ class AccountTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
@@ -99,12 +100,12 @@ class AccountTab extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
           children: [
-            const Text(
+            Text(
               'حسابي',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
-                color: AppColors.slate900,
+                color: colors.onSurface,
               ),
             ),
             const SizedBox(height: 20),
@@ -141,7 +142,7 @@ class AccountTab extends StatelessWidget {
                             ),
                             Text(
                               user.phone ?? user.username,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.slate500,
                                 fontSize: 12,
                               ),
@@ -184,7 +185,7 @@ class AccountTab extends StatelessWidget {
             PortalCard(
               child: Row(
                 children: [
-                  const Icon(Icons.autorenew_rounded, color: AppColors.indigo),
+                  Icon(Icons.autorenew_rounded, color: colors.primary),
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
@@ -197,7 +198,7 @@ class AccountTab extends StatelessWidget {
                   ),
                   Switch(
                     value: user.autoRenew,
-                    activeThumbColor: AppColors.indigo,
+                    activeThumbColor: colors.primary,
                     onChanged: (value) async {
                       final message = await controller.toggleAutoRenew(value);
                       if (context.mounted) {
@@ -252,15 +253,16 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppColors.slate400),
+          Icon(icon, size: 18, color: colors.onSurfaceVariant),
           const SizedBox(width: 10),
           Text(
             label,
-            style: const TextStyle(color: AppColors.slate500, fontSize: 12),
+            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
           ),
           const Spacer(),
           Text(
@@ -288,19 +290,20 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return ListTile(
-      leading: Icon(icon, color: color ?? AppColors.indigo),
+      leading: Icon(icon, color: color ?? colors.primary),
       title: Text(
         label,
         style: TextStyle(
           fontWeight: FontWeight.w800,
           fontSize: 13,
-          color: color ?? AppColors.slate900,
+          color: color ?? colors.onSurface,
         ),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_left_rounded,
-        color: AppColors.slate400,
+        color: colors.onSurfaceVariant,
       ),
       onTap: onTap,
     );

@@ -109,21 +109,29 @@ ThemeData buildAppTheme({AppThemeToken token = AppThemeToken.altkamelDefault}) {
     ),
     scaffoldBackgroundColor: palette.background,
     fontFamily: GoogleFonts.cairo().fontFamily,
-    textTheme: GoogleFonts.cairoTextTheme(),
   );
 
   return base.copyWith(
+    // Seed Cairo from the generated Material text theme. Calling
+    // cairoTextTheme() without a base creates dark text even in Night mode.
+    textTheme: GoogleFonts.cairoTextTheme(base.textTheme),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.slate100,
+      fillColor: base.colorScheme.surfaceContainerHighest,
       contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.slate100, width: 2),
+        borderSide: BorderSide(
+          color: base.colorScheme.outlineVariant,
+          width: 2,
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.slate100, width: 2),
+        borderSide: BorderSide(
+          color: base.colorScheme.outlineVariant,
+          width: 2,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -133,11 +141,11 @@ ThemeData buildAppTheme({AppThemeToken token = AppThemeToken.altkamelDefault}) {
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: AppColors.rose200, width: 2),
       ),
-      labelStyle: const TextStyle(
-        color: AppColors.slate700,
+      labelStyle: TextStyle(
+        color: base.colorScheme.onSurfaceVariant,
         fontWeight: FontWeight.w900,
       ),
-      hintStyle: const TextStyle(color: AppColors.slate400),
+      hintStyle: TextStyle(color: base.colorScheme.onSurfaceVariant),
     ),
   );
 }
