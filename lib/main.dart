@@ -76,6 +76,13 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  // Keep portal state above MaterialApp. Theme changes rebuild MaterialApp,
+  // and some Android devices recreate the home route during that rebuild.
+  // The loaded account must survive either behavior.
+  late final PortalController _portalController = PortalController(
+    repository: widget.portalRepository,
+  );
+
   @override
   void initState() {
     super.initState();
@@ -105,6 +112,7 @@ class _MyAppState extends State<MyApp> {
           authController: widget.authController,
           authRepository: widget.authRepository,
           portalRepository: widget.portalRepository,
+          portalController: _portalController,
           appConfigController: widget.appConfigController,
           themeModeController: widget.themeModeController,
         ),
@@ -120,6 +128,7 @@ class _SessionGate extends StatefulWidget {
   final AuthController authController;
   final AuthRepository authRepository;
   final PortalRepository portalRepository;
+  final PortalController portalController;
   final AppConfigController appConfigController;
   final ThemeModeController themeModeController;
 
@@ -127,6 +136,7 @@ class _SessionGate extends StatefulWidget {
     required this.authController,
     required this.authRepository,
     required this.portalRepository,
+    required this.portalController,
     required this.appConfigController,
     required this.themeModeController,
   });
@@ -138,12 +148,6 @@ class _SessionGate extends StatefulWidget {
 class _SessionGateState extends State<_SessionGate> {
   late final Future<bool> _isAuthenticated = widget.authRepository
       .isAuthenticated();
-  // App configuration can refresh after the portal has opened. Keep this
-  // controller stable across that theme/configuration rebuild; otherwise the
-  // visible shell receives a fresh controller that has never loaded data.
-  late final PortalController _portalController = PortalController(
-    repository: widget.portalRepository,
-  );
   bool _refreshedConfig = false;
 
   @override
@@ -162,7 +166,7 @@ class _SessionGateState extends State<_SessionGate> {
             unawaited(widget.appConfigController.refresh());
           }
           return PortalShell(
-            controller: _portalController,
+            controller: widget.portalController,
             authController: widget.authController,
             appConfigController: widget.appConfigController,
             themeModeController: widget.themeModeController,
