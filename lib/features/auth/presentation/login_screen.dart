@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_mode_controller.dart';
 import '../../../core/app_config/app_config_controller.dart';
 import '../../portal/data/portal_repository.dart';
 import '../../portal/presentation/portal_controller.dart';
@@ -22,12 +23,14 @@ class LoginScreen extends StatefulWidget {
   final AuthController authController;
   final PortalRepository portalRepository;
   final AppConfigController appConfigController;
+  final ThemeModeController themeModeController;
 
   const LoginScreen({
     super.key,
     required this.authController,
     required this.portalRepository,
     required this.appConfigController,
+    required this.themeModeController,
   });
 
   @override
@@ -70,6 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: PortalController(repository: widget.portalRepository),
             authController: widget.authController,
             appConfigController: widget.appConfigController,
+            themeModeController: widget.themeModeController,
           ),
         ),
       );

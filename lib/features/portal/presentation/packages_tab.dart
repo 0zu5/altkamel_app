@@ -22,20 +22,22 @@ class PackagesTab extends StatelessWidget {
 
     final agreed = await showDialog<bool>(
       context: context,
-      builder: (context) => _ConfirmChangeDialog(controller: controller, target: pkg),
+      builder: (context) =>
+          _ConfirmChangeDialog(controller: controller, target: pkg),
     );
     if (agreed != true || !context.mounted) return;
 
     final result = await controller.changeSubscription(pkg);
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.message ?? '')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message ?? '')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
@@ -50,11 +52,18 @@ class PackagesTab extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.slate400),
+                  const Icon(
+                    Icons.wifi_off_rounded,
+                    size: 48,
+                    color: AppColors.slate400,
+                  ),
                   const SizedBox(height: 12),
                   const Text('تعذّر جلب الباقات.', textAlign: TextAlign.center),
                   const SizedBox(height: 16),
-                  FilledButton(onPressed: controller.loadAll, child: const Text('إعادة المحاولة')),
+                  FilledButton(
+                    onPressed: controller.loadAll,
+                    child: const Text('إعادة المحاولة'),
+                  ),
                 ],
               ),
             ),
@@ -66,14 +75,18 @@ class PackagesTab extends StatelessWidget {
           child: ListView.separated(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
             itemCount: controller.packages.length + 1,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               if (index == 0) {
-                return const Padding(
+                return Padding(
                   padding: EdgeInsets.only(bottom: 4),
                   child: Text(
                     'الباقات المتاحة',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.slate900),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: colors.onSurface,
+                    ),
                   ),
                 );
               }
@@ -87,13 +100,13 @@ class PackagesTab extends StatelessWidget {
                       height: 44,
                       decoration: BoxDecoration(
                         color: isCurrent
-                            ? AppColors.indigo
-                            : AppColors.indigo.withValues(alpha: 0.08),
+                            ? colors.primary
+                            : colors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(13),
                       ),
                       child: Icon(
                         Icons.wifi_rounded,
-                        color: isCurrent ? Colors.white : AppColors.indigo,
+                        color: isCurrent ? colors.onPrimary : colors.primary,
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -101,28 +114,48 @@ class PackagesTab extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(pkg.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+                          Text(
+                            pkg.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                            ),
+                          ),
                           const SizedBox(height: 2),
-                          Text('LD ${pkg.price} / شهرياً',
-                              style: const TextStyle(color: AppColors.slate500, fontSize: 12)),
+                          Text(
+                            'LD ${pkg.price} / شهرياً',
+                            style: TextStyle(
+                              color: colors.onSurfaceVariant,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     if (isCurrent)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppColors.indigo.withValues(alpha: 0.1),
+                          color: colors.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(999),
                         ),
-                        child: const Text(
+                        child: Text(
                           'باقتك الحالية',
-                          style: TextStyle(color: AppColors.indigo, fontWeight: FontWeight.w800, fontSize: 11),
+                          style: TextStyle(
+                            color: colors.primary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11,
+                          ),
                         ),
                       )
                     else
                       OutlinedButton(
-                        onPressed: controller.actionLoading ? null : () => _confirmChange(context, pkg),
+                        onPressed: controller.actionLoading
+                            ? null
+                            : () => _confirmChange(context, pkg),
                         child: const Text('تغيير'),
                       ),
                   ],
@@ -158,7 +191,9 @@ class _ConfirmChangeDialogState extends State<_ConfirmChangeDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('سيتم تحويل اشتراكك إلى "${widget.target.name}" بسعر LD ${widget.target.price} شهرياً.'),
+          Text(
+            'سيتم تحويل اشتراكك إلى "${widget.target.name}" بسعر LD ${widget.target.price} شهرياً.',
+          ),
           if (delta != 0) ...[
             const SizedBox(height: 8),
             Text(
@@ -179,7 +214,10 @@ class _ConfirmChangeDialogState extends State<_ConfirmChangeDialog> {
             onChanged: (v) => setState(() => _agree = v ?? false),
             contentPadding: EdgeInsets.zero,
             controlAffinity: ListTileControlAffinity.leading,
-            title: const Text('أوافق على تغيير باقتي', style: TextStyle(fontSize: 13)),
+            title: const Text(
+              'أوافق على تغيير باقتي',
+              style: TextStyle(fontSize: 13),
+            ),
           ),
         ],
       ),

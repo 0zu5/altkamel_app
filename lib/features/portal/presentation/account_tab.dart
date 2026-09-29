@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_mode_controller.dart';
 import '../../../core/utils/formatters.dart';
 import 'portal_controller.dart';
 import 'widgets/portal_card.dart';
@@ -11,11 +12,13 @@ import 'widgets/redeem_dialog.dart';
 class AccountTab extends StatelessWidget {
   final PortalController controller;
   final VoidCallback onLogout;
+  final ThemeModeController themeModeController;
 
   const AccountTab({
     super.key,
     required this.controller,
     required this.onLogout,
+    required this.themeModeController,
   });
 
   Future<void> _openRedeemDialog(BuildContext context) async {
@@ -177,6 +180,29 @@ class AccountTab extends StatelessWidget {
                     value: user.registeredOn != null
                         ? Formatters.arabicDate(user.registeredOn)
                         : null,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            PortalCard(
+              child: Row(
+                children: [
+                  Icon(Icons.dark_mode_outlined, color: colors.primary),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'الوضع الداكن',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  Switch(
+                    value: themeModeController.mode == ThemeMode.dark,
+                    activeThumbColor: colors.primary,
+                    onChanged: themeModeController.setDark,
                   ),
                 ],
               ),

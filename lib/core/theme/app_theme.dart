@@ -47,7 +47,6 @@ class AppGradients {
 
 enum AppThemeToken {
   altkamelDefault,
-  altkamelNight,
   altkamelOcean,
   altkamelSand,
   altkamelRose,
@@ -55,7 +54,6 @@ enum AppThemeToken {
 
 AppThemeToken appThemeTokenFromId(String? value) {
   return switch (value) {
-    'altkamel-night' => AppThemeToken.altkamelNight,
     'altkamel-ocean' => AppThemeToken.altkamelOcean,
     'altkamel-sand' => AppThemeToken.altkamelSand,
     'altkamel-rose' => AppThemeToken.altkamelRose,
@@ -66,34 +64,27 @@ AppThemeToken appThemeTokenFromId(String? value) {
 /// Theme selection is intentionally bounded to tokens compiled into this
 /// application. Server configuration can select a token; it cannot provide
 /// arbitrary styling or executable UI.
-ThemeData buildAppTheme({AppThemeToken token = AppThemeToken.altkamelDefault}) {
+ThemeData buildAppTheme({
+  AppThemeToken token = AppThemeToken.altkamelDefault,
+  Brightness brightness = Brightness.light,
+}) {
   final palette = switch (token) {
-    AppThemeToken.altkamelNight => (
-      brightness: Brightness.dark,
-      background: const Color(0xFF0F172A),
-      seed: const Color(0xFF818CF8),
-      secondary: const Color(0xFF38BDF8),
-    ),
     AppThemeToken.altkamelOcean => (
-      brightness: Brightness.light,
       background: const Color(0xFFF0F9FF),
       seed: const Color(0xFF0284C7),
       secondary: const Color(0xFF14B8A6),
     ),
     AppThemeToken.altkamelSand => (
-      brightness: Brightness.light,
       background: const Color(0xFFFFFBEB),
       seed: const Color(0xFFD97706),
       secondary: const Color(0xFF0F766E),
     ),
     AppThemeToken.altkamelRose => (
-      brightness: Brightness.light,
       background: const Color(0xFFFFF1F2),
       seed: const Color(0xFFE11D48),
       secondary: const Color(0xFF8B5CF6),
     ),
     AppThemeToken.altkamelDefault => (
-      brightness: Brightness.light,
       background: AppColors.slateBg,
       seed: AppColors.indigo,
       secondary: AppColors.cyan,
@@ -102,12 +93,14 @@ ThemeData buildAppTheme({AppThemeToken token = AppThemeToken.altkamelDefault}) {
   final base = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      brightness: palette.brightness,
+      brightness: brightness,
       seedColor: palette.seed,
       primary: palette.seed,
       secondary: palette.secondary,
     ),
-    scaffoldBackgroundColor: palette.background,
+    scaffoldBackgroundColor: brightness == Brightness.dark
+        ? const Color(0xFF0F172A)
+        : palette.background,
     fontFamily: GoogleFonts.cairo().fontFamily,
   );
 

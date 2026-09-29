@@ -125,6 +125,7 @@ class DashboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
@@ -164,10 +165,10 @@ class DashboardTab extends StatelessWidget {
             children: [
               Text(
                 'مرحباً، ${controller.user?.displayName ?? ''}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.slate900,
+                  color: colors.onSurface,
                 ),
               ),
               const SizedBox(height: 20),
@@ -252,6 +253,7 @@ class _BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final days = controller.remainingDays;
     final Color urgencyColor;
     final String urgencyLabel;
@@ -273,10 +275,10 @@ class _BalanceCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'الرصيد الحالي',
                 style: TextStyle(
-                  color: AppColors.slate500,
+                  color: colors.onSurfaceVariant,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -303,10 +305,10 @@ class _BalanceCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'LD ${controller.balance.balance}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w900,
-              color: AppColors.slate900,
+              color: colors.onSurface,
             ),
           ),
           if (controller.balance.unpaidInvoices > 0) ...[
@@ -337,6 +339,7 @@ class _CurrentPackageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return PortalCard(
       child: Row(
         children: [
@@ -354,10 +357,10 @@ class _CurrentPackageCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'باقتك الحالية',
                   style: TextStyle(
-                    color: AppColors.slate500,
+                    color: colors.onSurfaceVariant,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -374,8 +377,8 @@ class _CurrentPackageCard extends StatelessWidget {
                 if (controller.currentPackagePrice > 0)
                   Text(
                     'LD ${controller.currentPackagePrice} / شهرياً',
-                    style: const TextStyle(
-                      color: AppColors.slate500,
+                    style: TextStyle(
+                      color: colors.onSurfaceVariant,
                       fontSize: 12,
                     ),
                   ),
@@ -396,6 +399,7 @@ class _UsageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final rx = controller.trafficToday.rxMb;
     final tx = controller.trafficToday.txMb;
     final total = (rx != null && tx != null) ? rx + tx : null;
@@ -404,10 +408,10 @@ class _UsageCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'استهلاك اليوم',
             style: TextStyle(
-              color: AppColors.slate500,
+              color: colors.onSurfaceVariant,
               fontWeight: FontWeight.w700,
               fontSize: 12,
             ),
@@ -453,10 +457,11 @@ class _UsageStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Expanded(
       child: Column(
         children: [
-          Icon(icon, color: AppColors.indigo, size: 18),
+          Icon(icon, color: colors.primary, size: 18),
           const SizedBox(height: 6),
           Text(
             value,
@@ -464,7 +469,7 @@ class _UsageStat extends StatelessWidget {
           ),
           Text(
             label,
-            style: const TextStyle(color: AppColors.slate500, fontSize: 11),
+            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 11),
           ),
         ],
       ),

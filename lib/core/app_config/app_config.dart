@@ -48,7 +48,6 @@ class MobileAppConfig {
     'theme': {
       'id': switch (theme) {
         AppThemeToken.altkamelDefault => 'altkamel-default',
-        AppThemeToken.altkamelNight => 'altkamel-night',
         AppThemeToken.altkamelOcean => 'altkamel-ocean',
         AppThemeToken.altkamelSand => 'altkamel-sand',
         AppThemeToken.altkamelRose => 'altkamel-rose',

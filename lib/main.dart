@@ -8,6 +8,7 @@ import 'core/app_config/app_config_controller.dart';
 import 'core/app_config/app_config_repository.dart';
 import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_controller.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/auth_controller.dart';
 import 'features/auth/presentation/login_screen.dart';
@@ -34,6 +35,7 @@ Future<void> main() async {
   final appConfigController = AppConfigController(
     repository: appConfigRepository,
   );
+  final themeModeController = ThemeModeController(storage: storage);
 
   // Initialize Auth Dependencies
   final authRepository = AuthRepository(apiClient: apiClient, storage: storage);
@@ -48,6 +50,7 @@ Future<void> main() async {
       authRepository: authRepository,
       portalRepository: portalRepository,
       appConfigController: appConfigController,
+      themeModeController: themeModeController,
     ),
   );
 }
@@ -57,6 +60,7 @@ class MyApp extends StatefulWidget {
   final AuthRepository authRepository;
   final PortalRepository portalRepository;
   final AppConfigController appConfigController;
+  final ThemeModeController themeModeController;
 
   const MyApp({
     super.key,
@@ -64,6 +68,7 @@ class MyApp extends StatefulWidget {
     required this.authRepository,
     required this.portalRepository,
     required this.appConfigController,
+    required this.themeModeController,
   });
 
   @override
@@ -75,16 +80,25 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     unawaited(widget.appConfigController.loadCached());
+    unawaited(widget.themeModeController.load());
   }
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: widget.appConfigController,
+      listenable: Listenable.merge([
+        widget.appConfigController,
+        widget.themeModeController,
+      ]),
       builder: (context, _) => MaterialApp(
         title: 'بوابة التكامل نت',
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(token: widget.appConfigController.config.theme),
+        darkTheme: buildAppTheme(
+          token: widget.appConfigController.config.theme,
+          brightness: Brightness.dark,
+        ),
+        themeMode: widget.themeModeController.mode,
         builder: (context, child) =>
             Directionality(textDirection: TextDirection.rtl, child: child!),
         home: _SessionGate(
@@ -92,6 +106,7 @@ class _MyAppState extends State<MyApp> {
           authRepository: widget.authRepository,
           portalRepository: widget.portalRepository,
           appConfigController: widget.appConfigController,
+          themeModeController: widget.themeModeController,
         ),
       ),
     );
@@ -106,12 +121,14 @@ class _SessionGate extends StatefulWidget {
   final AuthRepository authRepository;
   final PortalRepository portalRepository;
   final AppConfigController appConfigController;
+  final ThemeModeController themeModeController;
 
   const _SessionGate({
     required this.authController,
     required this.authRepository,
     required this.portalRepository,
     required this.appConfigController,
+    required this.themeModeController,
   });
 
   @override
@@ -148,12 +165,14 @@ class _SessionGateState extends State<_SessionGate> {
             controller: _portalController,
             authController: widget.authController,
             appConfigController: widget.appConfigController,
+            themeModeController: widget.themeModeController,
           );
         }
         return LoginScreen(
           authController: widget.authController,
           portalRepository: widget.portalRepository,
           appConfigController: widget.appConfigController,
+          themeModeController: widget.themeModeController,
         );
       },
     );

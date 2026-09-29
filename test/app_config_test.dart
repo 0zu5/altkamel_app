@@ -14,17 +14,28 @@ void main() {
     expect(config.theme, AppThemeToken.altkamelDefault);
   });
 
-  test('maps an allowlisted night token and ignores invalid versions', () {
+  test('maps an allowlisted brand token and ignores invalid versions', () {
     final config = MobileAppConfig.fromJson({
       'version': '5',
-      'theme': {'id': 'altkamel-night'},
+      'theme': {'id': 'altkamel-ocean'},
       'min_supported_version': 'not-a-version',
       'latest_version': '1.2.0',
     });
 
     expect(config.version, 5);
-    expect(config.theme, AppThemeToken.altkamelNight);
+    expect(config.theme, AppThemeToken.altkamelOcean);
     expect(config.minSupportedVersion, '1.0.0');
     expect(config.latestVersion, '1.2.0');
   });
+
+  test(
+    'treats the retired server night token as the default brand palette',
+    () {
+      final config = MobileAppConfig.fromJson({
+        'theme': {'id': 'altkamel-night'},
+      });
+
+      expect(config.theme, AppThemeToken.altkamelDefault);
+    },
+  );
 }

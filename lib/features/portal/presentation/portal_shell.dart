@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/app_config/app_config_controller.dart';
+import '../../../core/theme/theme_mode_controller.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../../auth/presentation/login_screen.dart';
 import 'account_tab.dart';
@@ -19,12 +20,14 @@ class PortalShell extends StatefulWidget {
   final PortalController controller;
   final AuthController authController;
   final AppConfigController appConfigController;
+  final ThemeModeController themeModeController;
 
   const PortalShell({
     super.key,
     required this.controller,
     required this.authController,
     required this.appConfigController,
+    required this.themeModeController,
   });
 
   @override
@@ -88,6 +91,7 @@ class _PortalShellState extends State<PortalShell> {
           authController: widget.authController,
           portalRepository: widget.controller.repository,
           appConfigController: widget.appConfigController,
+          themeModeController: widget.themeModeController,
         ),
       ),
       (route) => false,
@@ -107,7 +111,11 @@ class _PortalShellState extends State<PortalShell> {
       ),
       TowersTab(controller: widget.controller),
       InvoicesTab(controller: widget.controller),
-      AccountTab(controller: widget.controller, onLogout: _logout),
+      AccountTab(
+        controller: widget.controller,
+        onLogout: _logout,
+        themeModeController: widget.themeModeController,
+      ),
     ];
 
     return Scaffold(
