@@ -45,11 +45,20 @@ class AppGradients {
   );
 }
 
-enum AppThemeToken { altkamelDefault, altkamelNight }
+enum AppThemeToken {
+  altkamelDefault,
+  altkamelNight,
+  altkamelOcean,
+  altkamelSand,
+  altkamelRose,
+}
 
 AppThemeToken appThemeTokenFromId(String? value) {
   return switch (value) {
     'altkamel-night' => AppThemeToken.altkamelNight,
+    'altkamel-ocean' => AppThemeToken.altkamelOcean,
+    'altkamel-sand' => AppThemeToken.altkamelSand,
+    'altkamel-rose' => AppThemeToken.altkamelRose,
     _ => AppThemeToken.altkamelDefault,
   };
 }
@@ -58,18 +67,47 @@ AppThemeToken appThemeTokenFromId(String? value) {
 /// application. Server configuration can select a token; it cannot provide
 /// arbitrary styling or executable UI.
 ThemeData buildAppTheme({AppThemeToken token = AppThemeToken.altkamelDefault}) {
-  final night = token == AppThemeToken.altkamelNight;
-  final background = night ? const Color(0xFF0F172A) : AppColors.slateBg;
-  final seed = night ? const Color(0xFF818CF8) : AppColors.indigo;
+  final palette = switch (token) {
+    AppThemeToken.altkamelNight => (
+      brightness: Brightness.dark,
+      background: const Color(0xFF0F172A),
+      seed: const Color(0xFF818CF8),
+      secondary: const Color(0xFF38BDF8),
+    ),
+    AppThemeToken.altkamelOcean => (
+      brightness: Brightness.light,
+      background: const Color(0xFFF0F9FF),
+      seed: const Color(0xFF0284C7),
+      secondary: const Color(0xFF14B8A6),
+    ),
+    AppThemeToken.altkamelSand => (
+      brightness: Brightness.light,
+      background: const Color(0xFFFFFBEB),
+      seed: const Color(0xFFD97706),
+      secondary: const Color(0xFF0F766E),
+    ),
+    AppThemeToken.altkamelRose => (
+      brightness: Brightness.light,
+      background: const Color(0xFFFFF1F2),
+      seed: const Color(0xFFE11D48),
+      secondary: const Color(0xFF8B5CF6),
+    ),
+    AppThemeToken.altkamelDefault => (
+      brightness: Brightness.light,
+      background: AppColors.slateBg,
+      seed: AppColors.indigo,
+      secondary: AppColors.cyan,
+    ),
+  };
   final base = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      brightness: night ? Brightness.dark : Brightness.light,
-      seedColor: seed,
-      primary: seed,
-      secondary: AppColors.cyan,
+      brightness: palette.brightness,
+      seedColor: palette.seed,
+      primary: palette.seed,
+      secondary: palette.secondary,
     ),
-    scaffoldBackgroundColor: background,
+    scaffoldBackgroundColor: palette.background,
     fontFamily: GoogleFonts.cairo().fontFamily,
     textTheme: GoogleFonts.cairoTextTheme(),
   );
@@ -89,7 +127,7 @@ ThemeData buildAppTheme({AppThemeToken token = AppThemeToken.altkamelDefault}) {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.indigo, width: 2),
+        borderSide: BorderSide(color: palette.seed, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
