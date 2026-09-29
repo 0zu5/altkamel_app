@@ -29,7 +29,7 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
   @override
   void didUpdateWidget(covariant HomeBannerCarousel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.banners.length != widget.banners.length) {
+    if (oldWidget.banners != widget.banners) {
       _page = 0;
       _restartTimer();
     }
@@ -100,24 +100,6 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
                             ),
                           ),
                         ),
-                        if (banner.title?.trim().isNotEmpty == true)
-                          Align(
-                            alignment: Alignment.bottomRight,
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12),
-                              color: Colors.black.withValues(alpha: .48),
-                              child: Text(
-                                banner.title!,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                   ),
