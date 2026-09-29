@@ -6,6 +6,7 @@ class MobileAppConfig {
   final String minSupportedVersion;
   final String latestVersion;
   final String? maintenanceMessage;
+  final List<HomeBanner> banners;
 
   const MobileAppConfig({
     required this.version,
@@ -13,6 +14,7 @@ class MobileAppConfig {
     required this.minSupportedVersion,
     required this.latestVersion,
     this.maintenanceMessage,
+    this.banners = const [],
   });
 
   static const fallback = MobileAppConfig(
@@ -33,6 +35,11 @@ class MobileAppConfig {
       maintenanceMessage: maintenance is Map && maintenance['message'] is String
           ? maintenance['message'] as String
           : null,
+      banners: (json['banners'] is List ? json['banners'] as List : const [])
+          .whereType<Map>()
+          .map((banner) => HomeBanner.fromJson(banner))
+          .where((banner) => banner.imageUrl != null)
+          .toList(),
     );
   }
 
@@ -49,6 +56,27 @@ class MobileAppConfig {
     'maintenance': maintenanceMessage == null
         ? null
         : {'message': maintenanceMessage},
+    'banners': banners.map((banner) => banner.toJson()).toList(),
+  };
+}
+
+class HomeBanner {
+  final String? title;
+  final Uri? imageUrl;
+  final Uri? actionUrl;
+
+  const HomeBanner({this.title, this.imageUrl, this.actionUrl});
+
+  factory HomeBanner.fromJson(Map json) => HomeBanner(
+    title: json['title']?.toString(),
+    imageUrl: _httpsUri(json['image_url']),
+    actionUrl: _httpsUri(json['action_url']),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'image_url': imageUrl?.toString(),
+    'action_url': actionUrl?.toString(),
   };
 }
 
@@ -60,4 +88,11 @@ String _versionOrFallback(Object? value) {
   return RegExp(r'^\d+\.\d+\.\d+$').hasMatch(string)
       ? string
       : MobileAppConfig.fallback.minSupportedVersion;
+}
+
+Uri? _httpsUri(Object? value) {
+  final uri = Uri.tryParse(value?.toString() ?? '');
+  return uri != null && uri.scheme == 'https' && uri.host.isNotEmpty
+      ? uri
+      : null;
 }

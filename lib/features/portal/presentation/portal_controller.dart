@@ -29,6 +29,7 @@ class PortalController extends ChangeNotifier {
   BalanceInfo balance = const BalanceInfo();
   ServiceInfo? service;
   List<PackageInfo> packages = const [];
+  List<TowerInfo> towers = const [];
 
   bool invoicesLoading = false;
   List<InvoiceInfo> invoices = const [];
@@ -112,6 +113,7 @@ class PortalController extends ChangeNotifier {
       permissions = initial.userResult.permissions;
       balance = initial.balance;
       packages = initial.packages;
+      towers = initial.towers;
       antennaLocationSaved = initial.antennaLocationSaved;
       service = initial.service;
       unawaited(_refreshIdentity());

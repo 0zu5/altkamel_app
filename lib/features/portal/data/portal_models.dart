@@ -197,6 +197,36 @@ class PackageInfo {
   }
 }
 
+class TowerInfo {
+  final int id;
+  final String name;
+  final String? code;
+  final double latitude;
+  final double longitude;
+  final String? address;
+  final String? description;
+
+  const TowerInfo({
+    required this.id,
+    required this.name,
+    this.code,
+    required this.latitude,
+    required this.longitude,
+    this.address,
+    this.description,
+  });
+
+  factory TowerInfo.fromJson(Map json) => TowerInfo(
+    id: _toNum(json['id']).toInt(),
+    name: (json['name'] ?? '').toString(),
+    code: _toStringOrNull(json['code']),
+    latitude: _toNum(json['latitude']).toDouble(),
+    longitude: _toNum(json['longitude']).toDouble(),
+    address: _toStringOrNull(json['address']),
+    description: _toStringOrNull(json['description']),
+  );
+}
+
 /// One entry from POST /index/invoice
 class InvoiceInfo {
   final int id;

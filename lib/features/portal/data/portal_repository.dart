@@ -22,6 +22,7 @@ class PortalInitialData {
   final BalanceInfo balance;
   final ServiceInfo? service;
   final List<PackageInfo> packages;
+  final List<TowerInfo> towers;
   final bool antennaLocationSaved;
 
   const PortalInitialData({
@@ -29,6 +30,7 @@ class PortalInitialData {
     required this.balance,
     required this.service,
     required this.packages,
+    required this.towers,
     required this.antennaLocationSaved,
   });
 }
@@ -88,8 +90,12 @@ class PortalRepository {
       final subscription = _map(account['subscription']);
       final package = _map(subscription['package']);
       final rawPackages = portal['packages'];
+      final rawTowers = portal['towers'];
       if (rawPackages is! List) {
         throw Exception(SasMessages.fetchPackagesError);
+      }
+      if (rawTowers is! List) {
+        throw Exception('تعذر تحميل مواقع الأبراج.');
       }
 
       final user = UserProfile.fromJson({
@@ -122,6 +128,10 @@ class PortalRepository {
         packages: rawPackages
             .whereType<Map>()
             .map((item) => PackageInfo.fromJson(item))
+            .toList(),
+        towers: rawTowers
+            .whereType<Map>()
+            .map((item) => TowerInfo.fromJson(item))
             .toList(),
         antennaLocationSaved: location['saved'] == true,
       );

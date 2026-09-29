@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/app_config/app_config_controller.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import 'antenna_location_picker.dart';
 import 'portal_controller.dart';
 import 'widgets/portal_card.dart';
+import 'widgets/home_banner_carousel.dart';
 import 'widgets/recharge_sheet.dart';
 
 /// The main landing tab: balance, subscription status, today's usage, and
@@ -12,11 +14,13 @@ import 'widgets/recharge_sheet.dart';
 class DashboardTab extends StatelessWidget {
   final PortalController controller;
   final VoidCallback onGoToPackages;
+  final AppConfigController appConfigController;
 
   const DashboardTab({
     super.key,
     required this.controller,
     required this.onGoToPackages,
+    required this.appConfigController,
   });
 
   Future<void> _confirmActivate(BuildContext context) async {
@@ -166,6 +170,14 @@ class DashboardTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
+              ListenableBuilder(
+                listenable: appConfigController,
+                builder: (_, _) => HomeBannerCarousel(
+                  banners: appConfigController.config.banners,
+                ),
+              ),
+              if (appConfigController.config.banners.isNotEmpty)
+                const SizedBox(height: 16),
               _BalanceCard(controller: controller),
               const SizedBox(height: 16),
               _CurrentPackageCard(

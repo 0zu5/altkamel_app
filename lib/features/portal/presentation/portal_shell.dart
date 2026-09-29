@@ -11,6 +11,7 @@ import 'dashboard_tab.dart';
 import 'invoices_tab.dart';
 import 'packages_tab.dart';
 import 'portal_controller.dart';
+import 'towers_tab.dart';
 
 /// The logged-in shell: a bottom-nav with the four portal tabs, sharing
 /// one [PortalController] so switching tabs doesn't re-fetch data that's
@@ -66,6 +67,14 @@ class _PortalShellState extends State<PortalShell> {
     }
   }
 
+  void _showPackages() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PackagesTab(controller: widget.controller),
+      ),
+    );
+  }
+
   Future<void> _logout() async {
     await widget.authController.logout();
     if (mounted) _goToLogin();
@@ -92,10 +101,11 @@ class _PortalShellState extends State<PortalShell> {
       DashboardTab(
         controller: widget.controller,
         onGoToPackages: () {
-          setState(() => _tabIndex = 1);
+          _showPackages();
         },
+        appConfigController: widget.appConfigController,
       ),
-      PackagesTab(controller: widget.controller),
+      TowersTab(controller: widget.controller),
       InvoicesTab(controller: widget.controller),
       AccountTab(controller: widget.controller, onLogout: _logout),
     ];
@@ -115,9 +125,9 @@ class _PortalShellState extends State<PortalShell> {
             label: 'الرئيسية',
           ),
           NavigationDestination(
-            icon: Icon(Icons.wifi_tethering_outlined),
-            selectedIcon: Icon(Icons.wifi_tethering, color: AppColors.indigo),
-            label: 'الباقات',
+            icon: Icon(Icons.cell_tower_outlined),
+            selectedIcon: Icon(Icons.cell_tower, color: AppColors.indigo),
+            label: 'الأبراج',
           ),
           NavigationDestination(
             icon: Icon(Icons.receipt_long_outlined),
