@@ -192,7 +192,7 @@ class AccountTab extends StatelessWidget {
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
-                      'الوضع الداكن',
+                      'الوضع المظلم',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 13,
