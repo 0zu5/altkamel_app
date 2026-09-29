@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-
 /// A white, rounded, softly-shadowed container used throughout the portal
 /// tabs — the mobile equivalent of the website's white cards on a slate
 /// background.
@@ -17,6 +15,7 @@ class PortalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     // The white fill + rounded corners are drawn by an inner `Material`
     // (rather than a plain DecoratedBox) so that any ListTile/InkWell
     // inside `child` finds a proper Material ancestor for its background
@@ -28,14 +27,16 @@ class PortalCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(
+              alpha: colors.brightness == Brightness.dark ? 0.22 : 0.05,
+            ),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Material(
-        color: Colors.white,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(22),
         clipBehavior: Clip.antiAlias,
         child: Padding(padding: padding, child: child),
@@ -52,14 +53,15 @@ class PortalSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w900,
           fontSize: 15,
-          color: AppColors.slate900,
+          color: colors.onSurface,
         ),
       ),
     );

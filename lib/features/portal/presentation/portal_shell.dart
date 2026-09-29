@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/app_config/app_config_controller.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../../auth/presentation/login_screen.dart';
 import 'account_tab.dart';
@@ -97,6 +96,7 @@ class _PortalShellState extends State<PortalShell> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final tabs = [
       DashboardTab(
         controller: widget.controller,
@@ -117,26 +117,26 @@ class _PortalShellState extends State<PortalShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tabIndex,
         onDestinationSelected: _selectTab,
-        indicatorColor: AppColors.indigo.withValues(alpha: 0.12),
-        destinations: const [
+        indicatorColor: colors.primaryContainer,
+        destinations: [
           NavigationDestination(
             icon: Icon(Icons.space_dashboard_outlined),
-            selectedIcon: Icon(Icons.space_dashboard, color: AppColors.indigo),
+            selectedIcon: Icon(Icons.space_dashboard, color: colors.primary),
             label: 'الرئيسية',
           ),
           NavigationDestination(
             icon: Icon(Icons.cell_tower_outlined),
-            selectedIcon: Icon(Icons.cell_tower, color: AppColors.indigo),
+            selectedIcon: Icon(Icons.cell_tower, color: colors.primary),
             label: 'الأبراج',
           ),
           NavigationDestination(
             icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long, color: AppColors.indigo),
+            selectedIcon: Icon(Icons.receipt_long, color: colors.primary),
             label: 'الفواتير',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: AppColors.indigo),
+            selectedIcon: Icon(Icons.person, color: colors.primary),
             label: 'حسابي',
           ),
         ],
