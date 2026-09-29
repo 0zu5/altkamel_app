@@ -208,6 +208,7 @@ class InvoiceInfo {
   final String? createdAt;
   final String? paymentMethod;
   final String? dueDate;
+  final String source;
 
   const InvoiceInfo({
     required this.id,
@@ -219,6 +220,7 @@ class InvoiceInfo {
     this.createdAt,
     this.paymentMethod,
     this.dueDate,
+    this.source = 'sas',
   });
 
   factory InvoiceInfo.fromJson(Map json) {
@@ -232,6 +234,7 @@ class InvoiceInfo {
       createdAt: _toStringOrNull(json['created_at'] ?? json['issued_at']),
       paymentMethod: _toStringOrNull(json['payment_method']),
       dueDate: _toStringOrNull(json['due_date'] ?? json['due_at']),
+      source: (json['source'] ?? 'sas').toString(),
     );
   }
 }

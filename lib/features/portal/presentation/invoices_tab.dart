@@ -28,7 +28,11 @@ class InvoicesTab extends StatelessWidget {
                   padding: const EdgeInsets.all(24),
                   children: const [
                     SizedBox(height: 80),
-                    Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.slate400),
+                    Icon(
+                      Icons.receipt_long_outlined,
+                      size: 48,
+                      color: AppColors.slate400,
+                    ),
                     SizedBox(height: 12),
                     Text('لا توجد فواتير بعد.', textAlign: TextAlign.center),
                   ],
@@ -43,7 +47,11 @@ class InvoicesTab extends StatelessWidget {
                         padding: EdgeInsets.only(bottom: 4),
                         child: Text(
                           'الفواتير',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.slate900),
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.slate900,
+                          ),
                         ),
                       );
                     }
@@ -55,13 +63,20 @@ class InvoicesTab extends StatelessWidget {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: (invoice.paid ? const Color(0xFF0F766E) : AppColors.rose700)
-                                  .withValues(alpha: 0.1),
+                              color:
+                                  (invoice.paid
+                                          ? const Color(0xFF0F766E)
+                                          : AppColors.rose700)
+                                      .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
-                              invoice.paid ? Icons.check_circle_outline : Icons.schedule_rounded,
-                              color: invoice.paid ? const Color(0xFF0F766E) : AppColors.rose700,
+                              invoice.paid
+                                  ? Icons.check_circle_outline
+                                  : Icons.schedule_rounded,
+                              color: invoice.paid
+                                  ? const Color(0xFF0F766E)
+                                  : AppColors.rose700,
                               size: 20,
                             ),
                           ),
@@ -74,12 +89,22 @@ class InvoicesTab extends StatelessWidget {
                                   invoice.invoiceNumber.isNotEmpty
                                       ? invoice.invoiceNumber
                                       : 'فاتورة #${invoice.id}',
-                                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 13,
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  Formatters.arabicDate(invoice.createdAt),
-                                  style: const TextStyle(color: AppColors.slate500, fontSize: 11),
+                                  invoice.source == 'card'
+                                      ? 'شحن رصيد بالبطاقة • ${Formatters.arabicDate(invoice.createdAt)}'
+                                      : Formatters.arabicDate(
+                                          invoice.createdAt,
+                                        ),
+                                  style: const TextStyle(
+                                    color: AppColors.slate500,
+                                    fontSize: 11,
+                                  ),
                                 ),
                               ],
                             ),
@@ -87,12 +112,19 @@ class InvoicesTab extends StatelessWidget {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text('LD ${invoice.amount}',
-                                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+                              Text(
+                                'LD ${invoice.amount}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 13,
+                                ),
+                              ),
                               Text(
                                 invoice.paid ? 'مدفوعة' : 'غير مدفوعة',
                                 style: TextStyle(
-                                  color: invoice.paid ? const Color(0xFF0F766E) : AppColors.rose700,
+                                  color: invoice.paid
+                                      ? const Color(0xFF0F766E)
+                                      : AppColors.rose700,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                 ),
