@@ -26,6 +26,7 @@ class LoginScreen extends StatefulWidget {
   final AppConfigController appConfigController;
   final ThemeModeController themeModeController;
   final BiometricLoginService biometricLoginService;
+  final bool biometricUnlockAvailable;
 
   const LoginScreen({
     super.key,
@@ -34,6 +35,7 @@ class LoginScreen extends StatefulWidget {
     required this.appConfigController,
     required this.themeModeController,
     required this.biometricLoginService,
+    this.biometricUnlockAvailable = false,
   });
 
   @override
@@ -67,21 +69,47 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (success && mounted) {
-      // Configuration is an optional experience enhancement. It must never
-      // delay a successful login or trap the customer on the loading state.
-      unawaited(widget.appConfigController.refresh());
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => PortalShell(
-            controller: PortalController(repository: widget.portalRepository),
-            authController: widget.authController,
-            appConfigController: widget.appConfigController,
-            themeModeController: widget.themeModeController,
-            biometricLoginService: widget.biometricLoginService,
-          ),
-        ),
-      );
+      _openPortal();
     }
+  }
+
+  Future<void> _handleBiometricLogin() async {
+    try {
+      if (!await widget.biometricLoginService.unlock()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('لم يتم التحقق من البصمة. حاول مرة أخرى.'),
+            ),
+          );
+        }
+        return;
+      }
+      if (mounted) _openPortal();
+    } on BiometricLoginException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    }
+  }
+
+  void _openPortal() {
+    // Configuration is an optional experience enhancement. It must never
+    // delay a successful login or trap the customer on the loading state.
+    unawaited(widget.appConfigController.refresh());
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => PortalShell(
+          controller: PortalController(repository: widget.portalRepository),
+          authController: widget.authController,
+          appConfigController: widget.appConfigController,
+          themeModeController: widget.themeModeController,
+          biometricLoginService: widget.biometricLoginService,
+        ),
+      ),
+    );
   }
 
   Future<void> _openSupport() async {
@@ -245,6 +273,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   isLoading: controller.isLoading,
                   onPressed: _handleLogin,
                 ),
+                if (widget.biometricUnlockAvailable) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: controller.isLoading
+                        ? null
+                        : _handleBiometricLogin,
+                    icon: const Icon(Icons.fingerprint_rounded),
+                    label: const Text('تسجيل الدخول بالبصمة'),
+                  ),
+                ],
               ],
             );
           },

@@ -157,7 +157,6 @@ class _SessionGateState extends State<_SessionGate> {
   late final Future<bool> _isAuthenticated = widget.authRepository
       .isAuthenticated();
   bool _refreshedConfig = false;
-  bool _biometricUnlocked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -178,10 +177,14 @@ class _SessionGateState extends State<_SessionGate> {
                   body: Center(child: CircularProgressIndicator()),
                 );
               }
-              if (biometricSnapshot.data == true && !_biometricUnlocked) {
-                return _BiometricLockScreen(
-                  service: widget.biometricLoginService,
-                  onUnlocked: () => setState(() => _biometricUnlocked = true),
+              if (biometricSnapshot.data == true) {
+                return LoginScreen(
+                  authController: widget.authController,
+                  portalRepository: widget.portalRepository,
+                  appConfigController: widget.appConfigController,
+                  themeModeController: widget.themeModeController,
+                  biometricLoginService: widget.biometricLoginService,
+                  biometricUnlockAvailable: true,
                 );
               }
               return _buildPortal();
