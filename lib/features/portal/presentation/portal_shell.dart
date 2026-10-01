@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/app_config/app_config_controller.dart';
 import '../../../core/theme/theme_mode_controller.dart';
 import '../../auth/presentation/auth_controller.dart';
+import '../../auth/data/biometric_login_service.dart';
 import '../../auth/presentation/login_screen.dart';
 import 'account_tab.dart';
 import 'dashboard_tab.dart';
@@ -21,6 +22,7 @@ class PortalShell extends StatefulWidget {
   final AuthController authController;
   final AppConfigController appConfigController;
   final ThemeModeController themeModeController;
+  final BiometricLoginService biometricLoginService;
 
   const PortalShell({
     super.key,
@@ -28,6 +30,7 @@ class PortalShell extends StatefulWidget {
     required this.authController,
     required this.appConfigController,
     required this.themeModeController,
+    required this.biometricLoginService,
   });
 
   @override
@@ -92,6 +95,7 @@ class _PortalShellState extends State<PortalShell> {
           portalRepository: widget.controller.repository,
           appConfigController: widget.appConfigController,
           themeModeController: widget.themeModeController,
+          biometricLoginService: widget.biometricLoginService,
         ),
       ),
       (route) => false,
@@ -115,6 +119,7 @@ class _PortalShellState extends State<PortalShell> {
         controller: widget.controller,
         onLogout: _logout,
         themeModeController: widget.themeModeController,
+        biometricLoginService: widget.biometricLoginService,
       ),
     ];
 

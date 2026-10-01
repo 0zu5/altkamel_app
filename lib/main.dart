@@ -10,6 +10,7 @@ import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_controller.dart';
 import 'features/auth/data/auth_repository.dart';
+import 'features/auth/data/biometric_login_service.dart';
 import 'features/auth/presentation/auth_controller.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/portal/data/portal_repository.dart';
@@ -40,6 +41,7 @@ Future<void> main() async {
   // Initialize Auth Dependencies
   final authRepository = AuthRepository(apiClient: apiClient, storage: storage);
   final authController = AuthController(repository: authRepository);
+  final biometricLoginService = BiometricLoginService(storage: storage);
 
   // Initialize Portal Dependencies (dashboard/packages/invoices/account)
   final portalRepository = PortalRepository(apiClient: apiClient);
@@ -48,6 +50,7 @@ Future<void> main() async {
     MyApp(
       authController: authController,
       authRepository: authRepository,
+      biometricLoginService: biometricLoginService,
       portalRepository: portalRepository,
       appConfigController: appConfigController,
       themeModeController: themeModeController,
@@ -58,6 +61,7 @@ Future<void> main() async {
 class MyApp extends StatefulWidget {
   final AuthController authController;
   final AuthRepository authRepository;
+  final BiometricLoginService biometricLoginService;
   final PortalRepository portalRepository;
   final AppConfigController appConfigController;
   final ThemeModeController themeModeController;
@@ -66,6 +70,7 @@ class MyApp extends StatefulWidget {
     super.key,
     required this.authController,
     required this.authRepository,
+    required this.biometricLoginService,
     required this.portalRepository,
     required this.appConfigController,
     required this.themeModeController,
@@ -111,6 +116,7 @@ class _MyAppState extends State<MyApp> {
         home: _SessionGate(
           authController: widget.authController,
           authRepository: widget.authRepository,
+          biometricLoginService: widget.biometricLoginService,
           portalRepository: widget.portalRepository,
           portalController: _portalController,
           appConfigController: widget.appConfigController,
@@ -127,6 +133,7 @@ class _MyAppState extends State<MyApp> {
 class _SessionGate extends StatefulWidget {
   final AuthController authController;
   final AuthRepository authRepository;
+  final BiometricLoginService biometricLoginService;
   final PortalRepository portalRepository;
   final PortalController portalController;
   final AppConfigController appConfigController;
@@ -135,6 +142,7 @@ class _SessionGate extends StatefulWidget {
   const _SessionGate({
     required this.authController,
     required this.authRepository,
+    required this.biometricLoginService,
     required this.portalRepository,
     required this.portalController,
     required this.appConfigController,
@@ -149,6 +157,7 @@ class _SessionGateState extends State<_SessionGate> {
   late final Future<bool> _isAuthenticated = widget.authRepository
       .isAuthenticated();
   bool _refreshedConfig = false;
+  bool _biometricUnlocked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -161,15 +170,22 @@ class _SessionGateState extends State<_SessionGate> {
           );
         }
         if (snapshot.data == true) {
-          if (!_refreshedConfig) {
-            _refreshedConfig = true;
-            unawaited(widget.appConfigController.refresh());
-          }
-          return PortalShell(
-            controller: widget.portalController,
-            authController: widget.authController,
-            appConfigController: widget.appConfigController,
-            themeModeController: widget.themeModeController,
+          return FutureBuilder<bool>(
+            future: widget.biometricLoginService.isEnabled(),
+            builder: (context, biometricSnapshot) {
+              if (biometricSnapshot.connectionState != ConnectionState.done) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (biometricSnapshot.data == true && !_biometricUnlocked) {
+                return _BiometricLockScreen(
+                  service: widget.biometricLoginService,
+                  onUnlocked: () => setState(() => _biometricUnlocked = true),
+                );
+              }
+              return _buildPortal();
+            },
           );
         }
         return LoginScreen(
@@ -177,8 +193,107 @@ class _SessionGateState extends State<_SessionGate> {
           portalRepository: widget.portalRepository,
           appConfigController: widget.appConfigController,
           themeModeController: widget.themeModeController,
+          biometricLoginService: widget.biometricLoginService,
         );
       },
     );
   }
+
+  Widget _buildPortal() {
+    if (!_refreshedConfig) {
+      _refreshedConfig = true;
+      unawaited(widget.appConfigController.refresh());
+    }
+    return PortalShell(
+      controller: widget.portalController,
+      authController: widget.authController,
+      appConfigController: widget.appConfigController,
+      themeModeController: widget.themeModeController,
+      biometricLoginService: widget.biometricLoginService,
+    );
+  }
+}
+
+class _BiometricLockScreen extends StatefulWidget {
+  final BiometricLoginService service;
+  final VoidCallback onUnlocked;
+
+  const _BiometricLockScreen({required this.service, required this.onUnlocked});
+
+  @override
+  State<_BiometricLockScreen> createState() => _BiometricLockScreenState();
+}
+
+class _BiometricLockScreenState extends State<_BiometricLockScreen> {
+  bool _loading = false;
+  String? _error;
+
+  Future<void> _unlock() async {
+    if (_loading) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      if (await widget.service.unlock()) {
+        widget.onUnlocked();
+        return;
+      }
+      if (mounted) {
+        setState(() => _error = 'لم يتم التحقق من البصمة. حاول مرة أخرى.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'تعذر استخدام البصمة على هذا الجهاز.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.fingerprint_rounded, size: 64),
+            const SizedBox(height: 16),
+            const Text(
+              'افتح حسابك بالبصمة',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'تم تفعيل حماية الدخول بالبصمة لهذا الجهاز.',
+              textAlign: TextAlign.center,
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 14),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            const SizedBox(height: 22),
+            FilledButton.icon(
+              onPressed: _loading ? null : _unlock,
+              icon: _loading
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.fingerprint_rounded),
+              label: const Text('استخدام البصمة'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

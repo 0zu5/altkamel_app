@@ -70,5 +70,7 @@
 	<string>يستخدم تطبيق التكامل موقعك الحالي لتسجيل موقع الهوائي لخدمة الدعم فقط، بعد موافقتك.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>يستخدم تطبيق التكامل الكاميرا لمسح رمز QR الخاص بقسيمة الشحن، بعد موافقتك.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>يستخدم تطبيق التكامل Face ID لتأمين الدخول إلى حسابك، بعد موافقتك.</string>
 </dict>
 </plist>

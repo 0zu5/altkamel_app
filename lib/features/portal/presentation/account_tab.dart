@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_mode_controller.dart';
 import '../../../core/utils/formatters.dart';
+import '../../auth/data/biometric_login_service.dart';
+import '../data/contract_download_service.dart';
 import 'portal_controller.dart';
 import 'widgets/portal_card.dart';
 import 'widgets/recharge_sheet.dart';
@@ -13,12 +15,14 @@ class AccountTab extends StatelessWidget {
   final PortalController controller;
   final VoidCallback onLogout;
   final ThemeModeController themeModeController;
+  final BiometricLoginService biometricLoginService;
 
   const AccountTab({
     super.key,
     required this.controller,
     required this.onLogout,
     required this.themeModeController,
+    required this.biometricLoginService,
   });
 
   Future<void> _openChangePasswordDialog(BuildContext context) async {
@@ -176,6 +180,8 @@ class AccountTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+            _BiometricLoginTile(service: biometricLoginService),
+            const SizedBox(height: 16),
             PortalCard(
               child: Row(
                 children: [
@@ -234,6 +240,12 @@ class AccountTab extends StatelessWidget {
               child: Column(
                 children: [
                   _ActionTile(
+                    icon: Icons.description_outlined,
+                    label: 'تنزيل العقد',
+                    onTap: () => _downloadContract(context),
+                  ),
+                  const Divider(height: 1),
+                  _ActionTile(
                     icon: Icons.card_giftcard_outlined,
                     label: 'شحن رصيد',
                     onTap: () => showRechargeOptionsSheet(context, controller),
@@ -257,6 +269,112 @@ class AccountTab extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  Future<void> _downloadContract(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final message = await ContractDownloadService(
+        apiClient: controller.repository.apiClient,
+      ).downloadAndOpen();
+      if (context.mounted) {
+        messenger.showSnackBar(SnackBar(content: Text(message)));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('تعذر تنزيل العقد. حاول مرة أخرى.')),
+        );
+      }
+    }
+  }
+}
+
+class _BiometricLoginTile extends StatefulWidget {
+  final BiometricLoginService service;
+
+  const _BiometricLoginTile({required this.service});
+
+  @override
+  State<_BiometricLoginTile> createState() => _BiometricLoginTileState();
+}
+
+class _BiometricLoginTileState extends State<_BiometricLoginTile> {
+  bool _loading = true;
+  bool _enabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final enabled = await widget.service.isEnabled();
+    if (mounted) {
+      setState(() {
+        _enabled = enabled;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _toggle(bool value) async {
+    setState(() => _loading = true);
+    try {
+      if (value) {
+        final enabled = await widget.service.enable();
+        if (!enabled && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'تعذر تفعيل البصمة. تأكد من إعدادات قفل الشاشة في جهازك.',
+              ),
+            ),
+          );
+        }
+        _enabled = enabled;
+      } else {
+        await widget.service.disable();
+        _enabled = false;
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return PortalCard(
+      child: Row(
+        children: [
+          Icon(Icons.fingerprint_rounded, color: colors.primary),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'تسجيل الدخول بالبصمة',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'يتطلب البصمة لفتح الجلسة المحفوظة على هذا الجهاز.',
+                  style: TextStyle(fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: _enabled,
+            activeThumbColor: colors.primary,
+            onChanged: _loading ? null : _toggle,
+          ),
+        ],
+      ),
     );
   }
 }

@@ -10,6 +10,7 @@ import '../../../core/app_config/app_config_controller.dart';
 import '../../portal/data/portal_repository.dart';
 import '../../portal/presentation/portal_controller.dart';
 import '../../portal/presentation/portal_shell.dart';
+import '../data/biometric_login_service.dart';
 import 'auth_controller.dart';
 import 'widgets/error_banner.dart';
 import 'widgets/gradient_button.dart';
@@ -24,6 +25,7 @@ class LoginScreen extends StatefulWidget {
   final PortalRepository portalRepository;
   final AppConfigController appConfigController;
   final ThemeModeController themeModeController;
+  final BiometricLoginService biometricLoginService;
 
   const LoginScreen({
     super.key,
@@ -31,6 +33,7 @@ class LoginScreen extends StatefulWidget {
     required this.portalRepository,
     required this.appConfigController,
     required this.themeModeController,
+    required this.biometricLoginService,
   });
 
   @override
@@ -74,6 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
             authController: widget.authController,
             appConfigController: widget.appConfigController,
             themeModeController: widget.themeModeController,
+            biometricLoginService: widget.biometricLoginService,
           ),
         ),
       );
