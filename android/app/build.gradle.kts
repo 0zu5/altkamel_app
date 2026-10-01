@@ -35,6 +35,12 @@ android {
     }
 }
 
+dependencies {
+    // Required by local_auth when FlutterFragmentActivity hosts Android's
+    // BiometricPrompt on physical devices.
+    implementation("androidx.appcompat:appcompat:1.7.1")
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17

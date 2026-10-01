@@ -47,8 +47,10 @@ class BiometricLoginService {
           'هذا الجهاز لا يدعم تسجيل الدخول بالبصمة.',
         );
       }
-      if (!await _localAuth.canCheckBiometrics ||
-          (await _localAuth.getAvailableBiometrics()).isEmpty) {
+      // Some Android OEM biometric services report an empty enrolled-types
+      // list even when a fingerprint is configured. Do not reject that device
+      // before calling the platform prompt; the prompt is the authority.
+      if (!await _localAuth.canCheckBiometrics) {
         throw const BiometricLoginException(
           'لم يتم إعداد بصمة أو Face ID في إعدادات الجهاز.',
         );
