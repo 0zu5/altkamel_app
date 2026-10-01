@@ -1,6 +1,11 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 
+class BiometricLoginException implements Exception {
+  final String message;
+  const BiometricLoginException(this.message);
+}
+
 /// Stores only the customer's opt-in preference. The access and refresh
 /// tokens remain in platform-backed secure storage; this service asks the OS
 /// to verify the device owner before the saved session is opened.
@@ -17,12 +22,10 @@ class BiometricLoginService {
       (await storage.read(key: _enabledKey)) == 'true';
 
   Future<bool> enable() async {
-    if (!await _canUseBiometrics()) return false;
+    await _ensureAvailable();
 
-    final authenticated = await _localAuth.authenticate(
-      localizedReason: 'أكد هويتك لتفعيل الدخول بالبصمة إلى حساب التكامل.',
-      biometricOnly: true,
-      persistAcrossBackgrounding: true,
+    final authenticated = await _authenticate(
+      'أكد هويتك لتفعيل الدخول بالبصمة إلى حساب التكامل.',
     );
     if (authenticated) {
       await storage.write(key: _enabledKey, value: 'true');
@@ -33,21 +36,51 @@ class BiometricLoginService {
   Future<void> disable() => storage.delete(key: _enabledKey);
 
   Future<bool> unlock() async {
-    if (!await _canUseBiometrics()) return false;
-    return _localAuth.authenticate(
-      localizedReason: 'أكد هويتك لفتح حساب التكامل.',
-      biometricOnly: true,
-      persistAcrossBackgrounding: true,
-    );
+    await _ensureAvailable();
+    return _authenticate('أكد هويتك لفتح حساب التكامل.');
   }
 
-  Future<bool> _canUseBiometrics() async {
+  Future<void> _ensureAvailable() async {
     try {
-      if (!await _localAuth.isDeviceSupported()) return false;
-      if (!await _localAuth.canCheckBiometrics) return false;
-      return (await _localAuth.getAvailableBiometrics()).isNotEmpty;
-    } on LocalAuthException {
-      return false;
+      if (!await _localAuth.isDeviceSupported()) {
+        throw const BiometricLoginException(
+          'هذا الجهاز لا يدعم تسجيل الدخول بالبصمة.',
+        );
+      }
+      if (!await _localAuth.canCheckBiometrics ||
+          (await _localAuth.getAvailableBiometrics()).isEmpty) {
+        throw const BiometricLoginException(
+          'لم يتم إعداد بصمة أو Face ID في إعدادات الجهاز.',
+        );
+      }
+    } on LocalAuthException catch (error) {
+      throw BiometricLoginException(_messageFor(error));
     }
   }
+
+  Future<bool> _authenticate(String reason) async {
+    try {
+      return await _localAuth.authenticate(
+        localizedReason: reason,
+        biometricOnly: true,
+        persistAcrossBackgrounding: true,
+      );
+    } on LocalAuthException catch (error) {
+      throw BiometricLoginException(_messageFor(error));
+    }
+  }
+
+  String _messageFor(LocalAuthException error) => switch (error.code) {
+    LocalAuthExceptionCode.noCredentialsSet ||
+    LocalAuthExceptionCode.noBiometricsEnrolled =>
+      'لم يتم إعداد بصمة أو Face ID في إعدادات الجهاز.',
+    LocalAuthExceptionCode.noBiometricHardware =>
+      'هذا الجهاز لا يحتوي على مستشعر بصمة أو Face ID.',
+    LocalAuthExceptionCode.biometricLockout ||
+    LocalAuthExceptionCode.temporaryLockout =>
+      'تم قفل البصمة مؤقتاً. افتح الجهاز أولاً ثم حاول مرة أخرى.',
+    LocalAuthExceptionCode.userCanceled ||
+    LocalAuthExceptionCode.systemCanceled => 'تم إلغاء التحقق بالبصمة.',
+    _ => 'تعذر استخدام البصمة حالياً. ${error.description ?? ''}'.trim(),
+  };
 }

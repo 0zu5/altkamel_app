@@ -20,6 +20,9 @@ class PortalController extends ChangeNotifier {
   // false prevents a blank permanent spinner if Flutter ever restores the
   // shell without running its initial lifecycle callback.
   bool isLoading = false;
+  // This controller outlives MaterialApp theme rebuilds, so retain the
+  // customer's current tab when day/night mode changes.
+  int selectedTabIndex = 0;
   bool identityLoading = false;
   String? loadError;
   int _loadAttempt = 0;

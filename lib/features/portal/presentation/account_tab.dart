@@ -339,6 +339,12 @@ class _BiometricLoginTileState extends State<_BiometricLoginTile> {
         await widget.service.disable();
         _enabled = false;
       }
+    } on BiometricLoginException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }

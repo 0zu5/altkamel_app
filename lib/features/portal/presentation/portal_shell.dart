@@ -38,12 +38,13 @@ class PortalShell extends StatefulWidget {
 }
 
 class _PortalShellState extends State<PortalShell> {
-  int _tabIndex = 0;
+  late int _tabIndex;
   bool _leavingToLogin = false;
 
   @override
   void initState() {
     super.initState();
+    _tabIndex = widget.controller.selectedTabIndex;
     widget.controller.addListener(_onControllerChanged);
     widget.controller.loadAll();
   }
@@ -62,6 +63,7 @@ class _PortalShellState extends State<PortalShell> {
   }
 
   void _selectTab(int index) {
+    widget.controller.selectedTabIndex = index;
     setState(() => _tabIndex = index);
     // A tab must never present an empty profile/invoice view simply because
     // the first dashboard request failed while Android was reconnecting.
