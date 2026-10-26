@@ -1,12 +1,16 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'auth_interceptor.dart';
+import '../../features/auth/data/account_session_store.dart';
 import '../constants/api_constants.dart';
 
 class ApiClient {
   late final Dio dio;
 
-  ApiClient({required FlutterSecureStorage storage}) {
+  ApiClient({
+    required FlutterSecureStorage storage,
+    required AccountSessionStore accountSessionStore,
+  }) {
     dio = Dio(
       BaseOptions(
         baseUrl: ApiConstants.baseUrl,
@@ -22,6 +26,6 @@ class ApiClient {
 
     // Laravel accepts standard JSON over TLS. SAS payload encryption is
     // deliberately not part of the mobile app architecture.
-    dio.interceptors.add(AuthInterceptor(storage, dio));
+    dio.interceptors.add(AuthInterceptor(storage, dio, accountSessionStore));
   }
 }

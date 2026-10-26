@@ -11,6 +11,7 @@ import '../../portal/data/portal_repository.dart';
 import '../../portal/presentation/portal_controller.dart';
 import '../../portal/presentation/portal_shell.dart';
 import '../data/biometric_login_service.dart';
+import '../data/account_session_store.dart';
 import 'auth_controller.dart';
 import 'widgets/error_banner.dart';
 import 'widgets/gradient_button.dart';
@@ -50,6 +51,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  late Future<List<SavedAccount>> _savedAccounts;
+
+  @override
+  void initState() {
+    super.initState();
+    _savedAccounts = widget.authController.repository.savedAccounts();
+  }
 
   @override
   void dispose() {
@@ -69,8 +77,21 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (success && mounted) {
+      setState(() => _savedAccounts = widget.authController.repository.savedAccounts());
       _openPortal();
     }
+  }
+
+  Future<void> _openSavedAccount(SavedAccount account) async {
+    final opened = await widget.authController.repository.switchAccount(account.id);
+    if (!mounted) return;
+    if (!opened) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر فتح الحساب المحفوظ. سجّل الدخول به مرة أخرى.')),
+      );
+      return;
+    }
+    _openPortal();
   }
 
   Future<void> _handleBiometricLogin() async {
@@ -283,12 +304,59 @@ class _LoginScreenState extends State<LoginScreen> {
                     label: const Text('تسجيل الدخول بالبصمة'),
                   ),
                 ],
+                FutureBuilder<List<SavedAccount>>(
+                  future: _savedAccounts,
+                  builder: (context, snapshot) {
+                    final accounts = snapshot.data ?? const <SavedAccount>[];
+                    if (accounts.length < 2) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: OutlinedButton.icon(
+                        onPressed: controller.isLoading
+                            ? null
+                            : () => _showSavedAccounts(accounts),
+                        icon: const Icon(Icons.switch_account_outlined),
+                        label: const Text('التبديل بين الحسابات المسجلة'),
+                      ),
+                    );
+                  },
+                ),
               ],
             );
           },
         ),
       ),
     );
+  }
+
+  Future<void> _showSavedAccounts(List<SavedAccount> accounts) async {
+    final selected = await showModalBottomSheet<SavedAccount>(
+      context: context,
+      builder: (context) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'اختر الحساب',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              ...accounts.map(
+                (account) => ListTile(
+                  leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                  title: Text(account.username),
+                  onTap: () => Navigator.of(context).pop(account),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (selected != null) await _openSavedAccount(selected);
   }
 }
 

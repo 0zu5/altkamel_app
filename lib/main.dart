@@ -10,6 +10,7 @@ import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_controller.dart';
 import 'features/auth/data/auth_repository.dart';
+import 'features/auth/data/account_session_store.dart';
 import 'features/auth/data/biometric_login_service.dart';
 import 'features/auth/presentation/auth_controller.dart';
 import 'features/auth/presentation/login_screen.dart';
@@ -28,7 +29,11 @@ Future<void> main() async {
 
   // Initialize Core Dependencies
   const storage = FlutterSecureStorage();
-  final apiClient = ApiClient(storage: storage);
+  final accountSessionStore = AccountSessionStore(storage: storage);
+  final apiClient = ApiClient(
+    storage: storage,
+    accountSessionStore: accountSessionStore,
+  );
   final appConfigRepository = AppConfigRepository(
     apiClient: apiClient,
     storage: storage,
@@ -39,7 +44,11 @@ Future<void> main() async {
   final themeModeController = ThemeModeController(storage: storage);
 
   // Initialize Auth Dependencies
-  final authRepository = AuthRepository(apiClient: apiClient, storage: storage);
+  final authRepository = AuthRepository(
+    apiClient: apiClient,
+    storage: storage,
+    accountSessionStore: accountSessionStore,
+  );
   final authController = AuthController(repository: authRepository);
   final biometricLoginService = BiometricLoginService(storage: storage);
 

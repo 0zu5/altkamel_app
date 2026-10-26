@@ -16,6 +16,7 @@ class AccountTab extends StatelessWidget {
   final VoidCallback onLogout;
   final ThemeModeController themeModeController;
   final BiometricLoginService biometricLoginService;
+  final VoidCallback onManageAccounts;
 
   const AccountTab({
     super.key,
@@ -23,6 +24,7 @@ class AccountTab extends StatelessWidget {
     required this.onLogout,
     required this.themeModeController,
     required this.biometricLoginService,
+    required this.onManageAccounts,
   });
 
   Future<void> _openChangePasswordDialog(BuildContext context) async {
@@ -181,6 +183,20 @@ class AccountTab extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _BiometricLoginTile(service: biometricLoginService),
+            const SizedBox(height: 16),
+            PortalCard(
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                leading: Icon(Icons.switch_account_outlined, color: colors.primary),
+                title: const Text(
+                  'الحسابات المسجلة',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+                subtitle: const Text('إضافة حساب آخر أو التبديل بين الحسابات'),
+                trailing: const Icon(Icons.chevron_left_rounded),
+                onTap: onManageAccounts,
+              ),
+            ),
             const SizedBox(height: 16),
             PortalCard(
               child: Row(

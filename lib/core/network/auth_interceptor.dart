@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../features/auth/data/account_session_store.dart';
+
 import '../constants/api_constants.dart';
 
 /// Attaches `Authorization: Bearer <token>` to every request once the user
@@ -10,9 +12,10 @@ import '../constants/api_constants.dart';
 class AuthInterceptor extends Interceptor {
   final FlutterSecureStorage storage;
   final Dio dio;
+  final AccountSessionStore accountSessionStore;
   Future<String?>? _refreshInFlight;
 
-  AuthInterceptor(this.storage, this.dio);
+  AuthInterceptor(this.storage, this.dio, this.accountSessionStore);
 
   @override
   void onRequest(
@@ -131,6 +134,7 @@ class AuthInterceptor extends Interceptor {
 
       await storage.write(key: 'auth_token', value: accessToken);
       await storage.write(key: 'refresh_token', value: rotatedRefreshToken);
+      await accountSessionStore.syncActiveSession();
       return accessToken;
     } on DioException {
       await storage.delete(key: 'auth_token');

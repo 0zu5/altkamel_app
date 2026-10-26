@@ -8,13 +8,19 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/api_client.dart';
+import 'account_session_store.dart';
 
 class AuthRepository {
   final ApiClient apiClient;
   final FlutterSecureStorage storage;
+  final AccountSessionStore accountSessionStore;
   StreamSubscription<String>? _tokenRefreshSubscription;
 
-  AuthRepository({required this.apiClient, required this.storage});
+  AuthRepository({
+    required this.apiClient,
+    required this.storage,
+    required this.accountSessionStore,
+  });
 
   Future<bool> login(String username, String password) async {
     try {
@@ -44,6 +50,7 @@ class AuthRepository {
               key: 'refresh_token',
               value: refreshToken.toString(),
             );
+            await accountSessionStore.rememberCurrentSession(username);
             unawaited(_registerAndroidPushToken(installationId));
             return true;
           }
@@ -87,10 +94,21 @@ class AuthRepository {
     try {
       await apiClient.dio.post('/auth/logout');
     } finally {
-      await storage.delete(key: 'auth_token');
-      await storage.delete(key: 'refresh_token');
+      final activeId = await accountSessionStore.activeAccountId();
+      if (activeId != null) {
+        await accountSessionStore.remove(activeId);
+      } else {
+        await storage.delete(key: 'auth_token');
+        await storage.delete(key: 'refresh_token');
+      }
     }
   }
+
+  Future<List<SavedAccount>> savedAccounts() => accountSessionStore.accounts();
+
+  Future<bool> switchAccount(String accountId) => accountSessionStore.activate(accountId);
+
+  Future<void> removeSavedAccount(String accountId) => accountSessionStore.remove(accountId);
 
   Future<String> _installationId() async {
     final existing = await storage.read(key: 'installation_id');

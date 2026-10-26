@@ -20,6 +20,10 @@ class PortalController extends ChangeNotifier {
   // false prevents a blank permanent spinner if Flutter ever restores the
   // shell without running its initial lifecycle callback.
   bool isLoading = false;
+  /// True after the essential portal payload has been loaded for the active
+  /// account. Theme changes and harmless widget reconstruction must reuse
+  /// this data instead of showing the customer another full-screen loader.
+  bool get hasLoadedCoreData => user != null;
   // This controller outlives MaterialApp theme rebuilds, so retain the
   // customer's current tab when day/night mode changes.
   int selectedTabIndex = 0;
@@ -85,7 +89,12 @@ class PortalController extends ChangeNotifier {
 
   bool get isAccountActive => remainingDays > 0 || (service?.status ?? false);
 
-  Future<void> loadAll({bool retryOnce = true}) async {
+  Future<void> loadAll({bool retryOnce = true, bool force = false}) async {
+    // A PortalShell can be rebuilt when the local theme changes or when
+    // Flutter restores a route. Do not turn either event into a fresh SAS
+    // request. Explicit refreshes and account switches pass [force].
+    if (isLoading || (!force && hasLoadedCoreData)) return;
+
     final attempt = ++_loadAttempt;
     isLoading = true;
     loadError = null;
@@ -135,7 +144,7 @@ class PortalController extends ChangeNotifier {
         if (retryOnce && attempt == _loadAttempt) {
           await Future<void>.delayed(const Duration(milliseconds: 750));
           if (attempt == _loadAttempt) {
-            unawaited(loadAll(retryOnce: false));
+            unawaited(loadAll(retryOnce: false, force: true));
             return;
           }
         }
@@ -252,6 +261,30 @@ class PortalController extends ChangeNotifier {
 
   void clearLatestRecharge() {
     latestRecharge = null;
+    notifyListeners();
+  }
+
+  /// Clears account-specific data before an encrypted saved session is made
+  /// active. The same controller instance can then load the selected account
+  /// without briefly painting information from the previous account.
+  void resetForAccountSwitch() {
+    _loadAttempt++;
+    isLoading = false;
+    identityLoading = false;
+    loadError = null;
+    sessionExpired = false;
+    user = null;
+    permissions = const [];
+    balance = const BalanceInfo();
+    service = null;
+    packages = const [];
+    towers = const [];
+    invoices = const [];
+    invoicesLoading = false;
+    trafficToday = (rxMb: null, txMb: null);
+    latestRecharge = null;
+    antennaLocationSaved = false;
+    repository.invalidatePortalCache();
     notifyListeners();
   }
 

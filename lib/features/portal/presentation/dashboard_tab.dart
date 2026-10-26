@@ -159,7 +159,7 @@ class DashboardTab extends StatelessWidget {
         }
 
         return RefreshIndicator(
-          onRefresh: controller.loadAll,
+          onRefresh: () => controller.loadAll(force: true),
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
             children: [
