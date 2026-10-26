@@ -77,7 +77,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (success && mounted) {
-      setState(() => _savedAccounts = widget.authController.repository.savedAccounts());
+      setState(() {
+        _savedAccounts = widget.authController.repository.savedAccounts();
+      });
       _openPortal();
     }
   }
