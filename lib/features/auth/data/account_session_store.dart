@@ -36,6 +36,7 @@ class AccountSessionStore {
   static const _activeAccountKey = 'active_saved_account_id';
   static const _accessTokenKey = 'auth_token';
   static const _refreshTokenKey = 'refresh_token';
+  static const _installationIdKey = 'installation_id';
 
   final FlutterSecureStorage storage;
 
@@ -68,7 +69,8 @@ class AccountSessionStore {
     if (trimmedUsername.isEmpty) return;
     final accessToken = await storage.read(key: _accessTokenKey);
     final refreshToken = await storage.read(key: _refreshTokenKey);
-    if (accessToken == null || refreshToken == null) return;
+    final installationId = await storage.read(key: _installationIdKey);
+    if (accessToken == null || refreshToken == null || installationId == null) return;
 
     final entries = await accounts();
     final existing = entries.where(
@@ -86,6 +88,7 @@ class AccountSessionStore {
     ];
     await storage.write(key: _accountAccessKey(id), value: accessToken);
     await storage.write(key: _accountRefreshKey(id), value: refreshToken);
+    await storage.write(key: _accountInstallationKey(id), value: installationId);
     await storage.write(key: _activeAccountKey, value: id);
     await _writeAccounts(next);
   }
@@ -97,18 +100,22 @@ class AccountSessionStore {
     if (id == null || id.isEmpty) return;
     final accessToken = await storage.read(key: _accessTokenKey);
     final refreshToken = await storage.read(key: _refreshTokenKey);
-    if (accessToken == null || refreshToken == null) return;
+    final installationId = await storage.read(key: _installationIdKey);
+    if (accessToken == null || refreshToken == null || installationId == null) return;
     await storage.write(key: _accountAccessKey(id), value: accessToken);
     await storage.write(key: _accountRefreshKey(id), value: refreshToken);
+    await storage.write(key: _accountInstallationKey(id), value: installationId);
   }
 
   Future<bool> activate(String id) async {
     await syncActiveSession();
     final accessToken = await storage.read(key: _accountAccessKey(id));
     final refreshToken = await storage.read(key: _accountRefreshKey(id));
-    if (accessToken == null || refreshToken == null) return false;
+    final installationId = await storage.read(key: _accountInstallationKey(id));
+    if (accessToken == null || refreshToken == null || installationId == null) return false;
     await storage.write(key: _accessTokenKey, value: accessToken);
     await storage.write(key: _refreshTokenKey, value: refreshToken);
+    await storage.write(key: _installationIdKey, value: installationId);
     await storage.write(key: _activeAccountKey, value: id);
     final updated = (await accounts()).map((account) {
       return account.id == id
@@ -126,11 +133,13 @@ class AccountSessionStore {
   Future<void> remove(String id) async {
     await storage.delete(key: _accountAccessKey(id));
     await storage.delete(key: _accountRefreshKey(id));
+    await storage.delete(key: _accountInstallationKey(id));
     await _writeAccounts((await accounts()).where((item) => item.id != id).toList());
     if (await activeAccountId() == id) {
       await storage.delete(key: _activeAccountKey);
       await storage.delete(key: _accessTokenKey);
       await storage.delete(key: _refreshTokenKey);
+      await storage.delete(key: _installationIdKey);
     }
   }
 
@@ -141,6 +150,7 @@ class AccountSessionStore {
 
   String _accountAccessKey(String id) => 'saved_account.$id.access';
   String _accountRefreshKey(String id) => 'saved_account.$id.refresh';
+  String _accountInstallationKey(String id) => 'saved_account.$id.installation';
 
   String _randomId() {
     final random = Random.secure();

@@ -24,7 +24,10 @@ class AuthRepository {
 
   Future<bool> login(String username, String password) async {
     try {
-      final installationId = await _installationId();
+      // The backend permits one active session per installation ID. Scope an
+      // installation ID to each signed-in account so adding a second account
+      // does not revoke the first account's saved session.
+      final installationId = await _installationId(username);
       final response = await apiClient.dio.post(
         '/auth/login',
         data: {
@@ -50,6 +53,10 @@ class AuthRepository {
               key: 'refresh_token',
               value: refreshToken.toString(),
             );
+            // Do not replace the active account's installation ID until this
+            // login has succeeded. A rejected secondary login must leave the
+            // current account completely usable.
+            await storage.write(key: 'installation_id', value: installationId);
             await accountSessionStore.rememberCurrentSession(username);
             unawaited(_registerAndroidPushToken(installationId));
             return true;
@@ -106,12 +113,29 @@ class AuthRepository {
 
   Future<List<SavedAccount>> savedAccounts() => accountSessionStore.accounts();
 
-  Future<bool> switchAccount(String accountId) => accountSessionStore.activate(accountId);
+  Future<bool> switchAccount(String accountId) async {
+    if (!await accountSessionStore.activate(accountId)) return false;
 
-  Future<void> removeSavedAccount(String accountId) => accountSessionStore.remove(accountId);
+    try {
+      // Validate immediately. The interceptor refreshes an expired access
+      // token when the account's refresh session is still valid. If it is not,
+      // remove only this stale saved account instead of letting the portal
+      // spin behind repeated 401 responses.
+      await apiClient.dio.get('/portal');
+      return true;
+    } on DioException {
+      await accountSessionStore.remove(accountId);
+      return false;
+    }
+  }
 
-  Future<String> _installationId() async {
-    final existing = await storage.read(key: 'installation_id');
+  Future<void> removeSavedAccount(String accountId) =>
+      accountSessionStore.remove(accountId);
+
+  Future<String> _installationId(String username) async {
+    final normalizedUsername = username.trim().toLowerCase();
+    final accountKey = 'installation_id_for.$normalizedUsername';
+    final existing = await storage.read(key: accountKey);
     if (existing != null && existing.isNotEmpty) return existing;
 
     final random = Random.secure();
@@ -124,7 +148,7 @@ class AuthRepository {
         .join();
     final created =
         '${part(0, 4)}-${part(4, 6)}-${part(6, 8)}-${part(8, 10)}-${part(10, 16)}';
-    await storage.write(key: 'installation_id', value: created);
+    await storage.write(key: accountKey, value: created);
     return created;
   }
 
