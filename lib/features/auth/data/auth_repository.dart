@@ -24,6 +24,9 @@ class AuthRepository {
 
   Future<bool> login(String username, String password) async {
     try {
+      // Preserve the currently active account before a successful secondary
+      // login makes the new account's installation ID active.
+      await accountSessionStore.syncActiveSession();
       // The backend permits one active session per installation ID. Scope an
       // installation ID to each signed-in account so adding a second account
       // does not revoke the first account's saved session.
