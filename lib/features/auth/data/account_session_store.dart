@@ -20,7 +20,8 @@ class SavedAccount {
   factory SavedAccount.fromJson(Map<String, dynamic> json) => SavedAccount(
     id: json['id']?.toString() ?? '',
     username: json['username']?.toString() ?? '',
-    lastUsedAt: DateTime.tryParse(json['last_used_at']?.toString() ?? '') ??
+    lastUsedAt:
+        DateTime.tryParse(json['last_used_at']?.toString() ?? '') ??
         DateTime.fromMillisecondsSinceEpoch(0),
   );
 
@@ -50,8 +51,12 @@ class AccountSessionStore {
       if (decoded is! List) return const [];
       final values = decoded
           .whereType<Map>()
-          .map((value) => SavedAccount.fromJson(Map<String, dynamic>.from(value)))
-          .where((account) => account.id.isNotEmpty && account.username.isNotEmpty)
+          .map(
+            (value) => SavedAccount.fromJson(Map<String, dynamic>.from(value)),
+          )
+          .where(
+            (account) => account.id.isNotEmpty && account.username.isNotEmpty,
+          )
           .toList();
       values.sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
       return values;
@@ -70,11 +75,14 @@ class AccountSessionStore {
     final accessToken = await storage.read(key: _accessTokenKey);
     final refreshToken = await storage.read(key: _refreshTokenKey);
     final installationId = await storage.read(key: _installationIdKey);
-    if (accessToken == null || refreshToken == null || installationId == null) return;
+    if (accessToken == null || refreshToken == null || installationId == null) {
+      return;
+    }
 
     final entries = await accounts();
     final existing = entries.where(
-      (account) => account.username.toLowerCase() == trimmedUsername.toLowerCase(),
+      (account) =>
+          account.username.toLowerCase() == trimmedUsername.toLowerCase(),
     );
     final id = existing.isEmpty ? _randomId() : existing.first.id;
     final updated = SavedAccount(
@@ -82,13 +90,13 @@ class AccountSessionStore {
       username: trimmedUsername,
       lastUsedAt: DateTime.now(),
     );
-    final next = [
-      updated,
-      ...entries.where((account) => account.id != id),
-    ];
+    final next = [updated, ...entries.where((account) => account.id != id)];
     await storage.write(key: _accountAccessKey(id), value: accessToken);
     await storage.write(key: _accountRefreshKey(id), value: refreshToken);
-    await storage.write(key: _accountInstallationKey(id), value: installationId);
+    await storage.write(
+      key: _accountInstallationKey(id),
+      value: installationId,
+    );
     await storage.write(key: _activeAccountKey, value: id);
     await _writeAccounts(next);
   }
@@ -101,10 +109,15 @@ class AccountSessionStore {
     final accessToken = await storage.read(key: _accessTokenKey);
     final refreshToken = await storage.read(key: _refreshTokenKey);
     final installationId = await storage.read(key: _installationIdKey);
-    if (accessToken == null || refreshToken == null || installationId == null) return;
+    if (accessToken == null || refreshToken == null || installationId == null) {
+      return;
+    }
     await storage.write(key: _accountAccessKey(id), value: accessToken);
     await storage.write(key: _accountRefreshKey(id), value: refreshToken);
-    await storage.write(key: _accountInstallationKey(id), value: installationId);
+    await storage.write(
+      key: _accountInstallationKey(id),
+      value: installationId,
+    );
   }
 
   Future<bool> activate(String id) async {
@@ -112,7 +125,9 @@ class AccountSessionStore {
     final accessToken = await storage.read(key: _accountAccessKey(id));
     final refreshToken = await storage.read(key: _accountRefreshKey(id));
     final installationId = await storage.read(key: _accountInstallationKey(id));
-    if (accessToken == null || refreshToken == null || installationId == null) return false;
+    if (accessToken == null || refreshToken == null || installationId == null) {
+      return false;
+    }
     await storage.write(key: _accessTokenKey, value: accessToken);
     await storage.write(key: _refreshTokenKey, value: refreshToken);
     await storage.write(key: _installationIdKey, value: installationId);
@@ -134,13 +149,37 @@ class AccountSessionStore {
     await storage.delete(key: _accountAccessKey(id));
     await storage.delete(key: _accountRefreshKey(id));
     await storage.delete(key: _accountInstallationKey(id));
-    await _writeAccounts((await accounts()).where((item) => item.id != id).toList());
+    await storage.delete(key: _accountPendingRechargeKey(id));
+    await _writeAccounts(
+      (await accounts()).where((item) => item.id != id).toList(),
+    );
     if (await activeAccountId() == id) {
       await storage.delete(key: _activeAccountKey);
       await storage.delete(key: _accessTokenKey);
       await storage.delete(key: _refreshTokenKey);
       await storage.delete(key: _installationIdKey);
     }
+  }
+
+  /// Stores only the server-owned public ID of the current card recharge.
+  /// It is deliberately scoped to the saved account: a second customer on
+  /// this device must never see or reconcile another customer's payment.
+  Future<void> saveActivePendingRecharge(String paymentId) async {
+    final id = await activeAccountId();
+    if (id == null || id.isEmpty || paymentId.isEmpty) return;
+    await storage.write(key: _accountPendingRechargeKey(id), value: paymentId);
+  }
+
+  Future<String?> activePendingRechargeId() async {
+    final id = await activeAccountId();
+    if (id == null || id.isEmpty) return null;
+    return storage.read(key: _accountPendingRechargeKey(id));
+  }
+
+  Future<void> clearActivePendingRecharge() async {
+    final id = await activeAccountId();
+    if (id == null || id.isEmpty) return;
+    await storage.delete(key: _accountPendingRechargeKey(id));
   }
 
   Future<void> _writeAccounts(List<SavedAccount> values) => storage.write(
@@ -151,11 +190,14 @@ class AccountSessionStore {
   String _accountAccessKey(String id) => 'saved_account.$id.access';
   String _accountRefreshKey(String id) => 'saved_account.$id.refresh';
   String _accountInstallationKey(String id) => 'saved_account.$id.installation';
+  String _accountPendingRechargeKey(String id) =>
+      'saved_account.$id.pending_recharge';
 
   String _randomId() {
     final random = Random.secure();
-    return List<int>.generate(16, (_) => random.nextInt(256))
-        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
-        .join();
+    return List<int>.generate(
+      16,
+      (_) => random.nextInt(256),
+    ).map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
   }
 }

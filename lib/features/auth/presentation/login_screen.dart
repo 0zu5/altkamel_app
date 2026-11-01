@@ -85,11 +85,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _openSavedAccount(SavedAccount account) async {
-    final opened = await widget.authController.repository.switchAccount(account.id);
+    final opened = await widget.authController.repository.switchAccount(
+      account.id,
+    );
     if (!mounted) return;
     if (!opened) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر فتح الحساب المحفوظ. سجّل الدخول به مرة أخرى.')),
+        const SnackBar(
+          content: Text('تعذر فتح الحساب المحفوظ. سجّل الدخول به مرة أخرى.'),
+        ),
       );
       return;
     }
@@ -125,7 +129,11 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => PortalShell(
-          controller: PortalController(repository: widget.portalRepository),
+          controller: PortalController(
+            repository: widget.portalRepository,
+            accountSessionStore:
+                widget.authController.repository.accountSessionStore,
+          ),
           authController: widget.authController,
           appConfigController: widget.appConfigController,
           themeModeController: widget.themeModeController,
@@ -348,7 +356,9 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 8),
               ...accounts.map(
                 (account) => ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                  leading: const CircleAvatar(
+                    child: Icon(Icons.person_outline),
+                  ),
                   title: Text(account.username),
                   onTap: () => Navigator.of(context).pop(account),
                 ),

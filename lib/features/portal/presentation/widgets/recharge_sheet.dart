@@ -100,6 +100,7 @@ class _RechargeSheetState extends State<_RechargeSheet>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    unawaited(_restorePendingRecharge());
   }
 
   @override
@@ -166,6 +167,12 @@ class _RechargeSheetState extends State<_RechargeSheet>
     _poller = Timer.periodic(_pollInterval, (_) {
       unawaited(_pollOnce());
     });
+  }
+
+  Future<void> _restorePendingRecharge() async {
+    await controller.restorePendingCardRecharge();
+    if (!mounted || controller.latestRecharge?.isFinal == true) return;
+    if (controller.latestRecharge != null) _startPolling();
   }
 
   Future<void> _pollOnce() async {

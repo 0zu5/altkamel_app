@@ -95,6 +95,7 @@ class _MyAppState extends State<MyApp> {
   // The loaded account must survive either behavior.
   late final PortalController _portalController = PortalController(
     repository: widget.portalRepository,
+    accountSessionStore: widget.authRepository.accountSessionStore,
   );
 
   @override

@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/constants/sas_messages.dart';
+import '../../auth/data/account_session_store.dart';
 import '../data/portal_models.dart';
 import '../data/portal_repository.dart';
 
@@ -13,13 +14,18 @@ import '../data/portal_repository.dart';
 /// the website's separate pages each do their own `onMounted` fetch.
 class PortalController extends ChangeNotifier {
   final PortalRepository repository;
+  final AccountSessionStore accountSessionStore;
 
-  PortalController({required this.repository});
+  PortalController({
+    required this.repository,
+    required this.accountSessionStore,
+  });
 
   // A freshly constructed controller has not started any work yet. Starting
   // false prevents a blank permanent spinner if Flutter ever restores the
   // shell without running its initial lifecycle callback.
   bool isLoading = false;
+
   /// True after the essential portal payload has been loaded for the active
   /// account. Theme changes and harmless widget reconstruction must reuse
   /// this data instead of showing the customer another full-screen loader.
@@ -52,6 +58,7 @@ class PortalController extends ChangeNotifier {
   /// while the user is completing card checkout in their browser.
   bool rechargeLoading = false;
   CardRecharge? latestRecharge;
+  bool _restoringPendingRecharge = false;
 
   bool antennaLocationLoading = false;
   bool antennaLocationSaved = false;
@@ -160,6 +167,7 @@ class PortalController extends ChangeNotifier {
     // Fetched separately so the main screen isn't blocked on them.
     unawaited(loadInvoices());
     unawaited(loadTraffic());
+    unawaited(restorePendingCardRecharge());
   }
 
   Future<void> _refreshIdentity() async {
@@ -231,6 +239,7 @@ class PortalController extends ChangeNotifier {
         idempotencyKey: _uuidV4(),
       );
       latestRecharge = recharge;
+      await accountSessionStore.saveActivePendingRecharge(recharge.id);
       return recharge;
     } catch (_) {
       rethrow;
@@ -252,6 +261,9 @@ class PortalController extends ChangeNotifier {
       if (recharge.state == 'credited') {
         unawaited(refreshAccountData());
       }
+      if (recharge.isFinal) {
+        await accountSessionStore.clearActivePendingRecharge();
+      }
       return recharge;
     } finally {
       rechargeLoading = false;
@@ -259,8 +271,32 @@ class PortalController extends ChangeNotifier {
     }
   }
 
+  Future<void> restorePendingCardRecharge() async {
+    if (_restoringPendingRecharge || latestRecharge != null) return;
+    _restoringPendingRecharge = true;
+    try {
+      final id = await accountSessionStore.activePendingRechargeId();
+      if (id == null || id.isEmpty) return;
+      final recharge = await repository.getCardRecharge(id);
+      latestRecharge = recharge;
+      if (recharge.state == 'credited') {
+        unawaited(refreshAccountData());
+      }
+      if (recharge.isFinal) {
+        await accountSessionStore.clearActivePendingRecharge();
+      }
+      notifyListeners();
+    } catch (_) {
+      // Keep the ID so a temporary offline/API failure can be reconciled on
+      // the next app launch or when the customer opens card recharge again.
+    } finally {
+      _restoringPendingRecharge = false;
+    }
+  }
+
   void clearLatestRecharge() {
     latestRecharge = null;
+    unawaited(accountSessionStore.clearActivePendingRecharge());
     notifyListeners();
   }
 
@@ -283,6 +319,7 @@ class PortalController extends ChangeNotifier {
     invoicesLoading = false;
     trafficToday = (rxMb: null, txMb: null);
     latestRecharge = null;
+    _restoringPendingRecharge = false;
     antennaLocationSaved = false;
     repository.invalidatePortalCache();
     notifyListeners();
