@@ -85,10 +85,14 @@ class _RechargeSheet extends StatefulWidget {
 
 class _RechargeSheetState extends State<_RechargeSheet>
     with WidgetsBindingObserver {
+  static const _pollInterval = Duration(seconds: 5);
+  static const _maximumAutomaticPolls = 24;
+
   final _amountController = TextEditingController(text: '10');
   Timer? _poller;
   String? _error;
   bool _openingCheckout = false;
+  int _automaticPolls = 0;
 
   PortalController get controller => widget.controller;
 
@@ -110,7 +114,10 @@ class _RechargeSheetState extends State<_RechargeSheet>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed &&
         controller.latestRecharge != null) {
-      unawaited(_refreshStatus());
+      // The payment return URL opens the app, but it is not itself proof of
+      // settlement. Query Laravel immediately when the browser gives focus
+      // back, rather than waiting for the next periodic tick.
+      _startPolling();
     }
   }
 
@@ -134,6 +141,10 @@ class _RechargeSheetState extends State<_RechargeSheet>
       }
 
       setState(() => _openingCheckout = true);
+      // Start the first status check before handing off to the external
+      // browser. Some platform launchers do not emit a second lifecycle
+      // event when the custom return URL reopens an already-running app.
+      _startPolling();
       final opened = await launchUrl(url, mode: LaunchMode.externalApplication);
       if (!mounted) return;
       setState(() => _openingCheckout = false);
@@ -141,7 +152,6 @@ class _RechargeSheetState extends State<_RechargeSheet>
         setState(() => _error = 'تعذر فتح المتصفح لإتمام عملية الدفع.');
         return;
       }
-      _startPolling();
     } catch (e) {
       if (mounted) {
         setState(() => _error = _messageOf(e));
@@ -151,9 +161,34 @@ class _RechargeSheetState extends State<_RechargeSheet>
 
   void _startPolling() {
     _poller?.cancel();
-    _poller = Timer.periodic(const Duration(seconds: 5), (_) {
-      unawaited(_refreshStatus());
+    _automaticPolls = 0;
+    unawaited(_pollOnce());
+    _poller = Timer.periodic(_pollInterval, (_) {
+      unawaited(_pollOnce());
     });
+  }
+
+  Future<void> _pollOnce() async {
+    if (!mounted || controller.latestRecharge?.isFinal == true) {
+      _poller?.cancel();
+      return;
+    }
+
+    _automaticPolls++;
+    await _refreshStatus();
+
+    if (!mounted || controller.latestRecharge?.isFinal == true) {
+      _poller?.cancel();
+      return;
+    }
+
+    if (_automaticPolls >= _maximumAutomaticPolls) {
+      _poller?.cancel();
+      setState(() {
+        _error =
+            'لم يصل تأكيد الدفع بعد. يمكنك التحقق مرة أخرى لاحقاً؛ لن يتم خصم الرصيد مرتين.';
+      });
+    }
   }
 
   Future<void> _refreshStatus() async {
