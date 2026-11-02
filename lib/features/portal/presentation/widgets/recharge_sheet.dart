@@ -290,6 +290,13 @@ class _RechargeSheetState extends State<_RechargeSheet>
                     ),
                     if (!recharge.isFinal) ...[
                       const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: controller.rechargeLoading
+                            ? null
+                            : _confirmAbandonCheckout,
+                        icon: const Icon(Icons.cancel_outlined),
+                        label: const Text('إلغاء عملية الدفع المعلقة'),
+                      ),
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
                         child: const Text('العودة للرئيسية'),
@@ -358,6 +365,36 @@ class _RechargeSheetState extends State<_RechargeSheet>
         _error =
             'تم حفظ عملية الدفع. يمكنك المتابعة لاحقاً أو العودة للرئيسية دون إنشاء عملية جديدة.';
       });
+    }
+  }
+
+  Future<void> _confirmAbandonCheckout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('إلغاء متابعة الدفع؟'),
+        content: const Text(
+          'لن تظهر هذه العملية مرة أخرى في التطبيق. إذا أكدت بوابة الدفع العملية لاحقاً، سيظل رصيدك محمياً وسيُعالج التأكيد تلقائياً.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('الاحتفاظ بالعملية'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('إلغاء المتابعة'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await controller.abandonLatestCardRecharge();
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) setState(() => _error = _messageOf(e));
     }
   }
 }

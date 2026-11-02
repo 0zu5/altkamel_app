@@ -331,6 +331,21 @@ class PortalController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> abandonLatestCardRecharge() async {
+    final id = latestRecharge?.id;
+    if (id == null || id.isEmpty) return;
+    rechargeLoading = true;
+    notifyListeners();
+    try {
+      await repository.abandonCardRecharge(id);
+      latestRecharge = null;
+      await accountSessionStore.clearActivePendingRecharge();
+    } finally {
+      rechargeLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Clears account-specific data before an encrypted saved session is made
   /// active. The same controller instance can then load the selected account
   /// without briefly painting information from the previous account.

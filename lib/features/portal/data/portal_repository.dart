@@ -356,6 +356,17 @@ class PortalRepository {
     }
   }
 
+  /// Hides an unfinished checkout from future resume prompts. This does not
+  /// claim that a gateway charge was reversed; verified late settlements stay
+  /// eligible for safe server-side processing.
+  Future<void> abandonCardRecharge(String paymentId) async {
+    try {
+      await apiClient.dio.delete('/payments/$paymentId/checkout');
+    } on DioException catch (e) {
+      throw Exception(_friendlyPaymentError(e));
+    }
+  }
+
   /// Stores a customer-confirmed antenna location for the signed-in account.
   /// Coordinates are selected by the customer after explicit consent. This
   /// deliberately does not require their current device location.
