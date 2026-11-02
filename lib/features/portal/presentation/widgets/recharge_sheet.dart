@@ -151,7 +151,7 @@ class _RechargeSheetState extends State<_RechargeSheet>
       );
       if (!mounted) return;
       setState(() => _openingCheckout = false);
-      if (returned == true) _startPolling();
+      _handleCheckoutClosed(returned);
     } catch (e) {
       if (mounted) {
         setState(() => _error = _messageOf(e));
@@ -170,6 +170,7 @@ class _RechargeSheetState extends State<_RechargeSheet>
 
   Future<void> _restorePendingRecharge() async {
     await controller.restorePendingCardRecharge();
+    await controller.recoverOpenCardRecharge();
     if (!mounted || controller.latestRecharge?.isFinal == true) return;
     if (controller.latestRecharge != null) _startPolling();
   }
@@ -287,6 +288,13 @@ class _RechargeSheetState extends State<_RechargeSheet>
                             : 'التحقق من حالة الدفع',
                       ),
                     ),
+                    if (!recharge.isFinal) ...[
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('العودة للرئيسية'),
+                      ),
+                    ],
                     if (recharge.isFinal) ...[
                       const SizedBox(height: 8),
                       TextButton(
@@ -334,7 +342,23 @@ class _RechargeSheetState extends State<_RechargeSheet>
     );
     if (!mounted) return;
     setState(() => _openingCheckout = false);
-    if (returned == true) _startPolling();
+    _handleCheckoutClosed(returned);
+  }
+
+  Future<void> _handleCheckoutClosed(bool? returned) async {
+    if (returned == true) {
+      _startPolling();
+      return;
+    }
+
+    _poller?.cancel();
+    await _refreshStatus();
+    if (mounted && controller.latestRecharge?.isFinal != true) {
+      setState(() {
+        _error =
+            'تم حفظ عملية الدفع. يمكنك المتابعة لاحقاً أو العودة للرئيسية دون إنشاء عملية جديدة.';
+      });
+    }
   }
 }
 

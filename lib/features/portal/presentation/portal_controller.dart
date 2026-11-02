@@ -257,7 +257,12 @@ class PortalController extends ChangeNotifier {
     notifyListeners();
     try {
       final recharge = await repository.getCardRecharge(id);
-      latestRecharge = recharge;
+      // The status endpoint deliberately redacts the opaque checkout URL.
+      // Retain a URL previously received from checkout creation/resume so
+      // a status refresh cannot remove the customer's resume action.
+      latestRecharge = recharge.copyWith(
+        checkoutUrl: latestRecharge?.checkoutUrl,
+      );
       if (recharge.state == 'credited') {
         unawaited(refreshAccountData());
       }
@@ -302,6 +307,21 @@ class PortalController extends ChangeNotifier {
       // the next app launch or when the customer opens card recharge again.
     } finally {
       _restoringPendingRecharge = false;
+    }
+  }
+
+  /// Re-read the server-owned resumable checkout even when an earlier status
+  /// refresh has already populated [latestRecharge] without a checkout URL.
+  Future<void> recoverOpenCardRecharge() async {
+    try {
+      final recharge = await repository.getOpenCardRecharge();
+      if (recharge == null) return;
+      latestRecharge = recharge;
+      await accountSessionStore.saveActivePendingRecharge(recharge.id);
+      notifyListeners();
+    } catch (_) {
+      // Existing local state remains available while an API deployment or
+      // network connection is temporarily unavailable.
     }
   }
 

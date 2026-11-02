@@ -315,6 +315,16 @@ class CardRecharge {
     );
   }
 
+  CardRecharge copyWith({Uri? checkoutUrl}) => CardRecharge(
+    id: id,
+    state: state,
+    amountMinor: amountMinor,
+    currency: currency,
+    checkoutUrl: checkoutUrl ?? this.checkoutUrl,
+    settledAt: settledAt,
+    sasCreditedAt: sasCreditedAt,
+  );
+
   num get amountLyd => amountMinor / 1000;
 
   bool get isFinal =>
