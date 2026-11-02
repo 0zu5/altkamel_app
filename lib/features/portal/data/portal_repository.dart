@@ -333,6 +333,29 @@ class PortalRepository {
     }
   }
 
+  /// Finds the current account's resumable gateway checkout. The API returns
+  /// a URL only for a checkout that still belongs to this authenticated
+  /// customer and is not terminal.
+  Future<CardRecharge?> getOpenCardRecharge() async {
+    try {
+      final account = _account(await _portal());
+      final sasAccountId = account['id'];
+      if (sasAccountId is! num && int.tryParse('$sasAccountId') == null) {
+        throw Exception('تعذر تحديد الحساب المراد شحنه.');
+      }
+
+      final response = await apiClient.dio.get(
+        '/payments/card/open',
+        queryParameters: {'sas_account_id': sasAccountId},
+      );
+      final body = response.data;
+      final data = body is Map ? body['data'] : null;
+      return data is Map ? CardRecharge.fromJson(data) : null;
+    } on DioException catch (e) {
+      throw Exception(_friendlyPaymentError(e));
+    }
+  }
+
   /// Stores a customer-confirmed antenna location for the signed-in account.
   /// Coordinates are selected by the customer after explicit consent. This
   /// deliberately does not require their current device location.

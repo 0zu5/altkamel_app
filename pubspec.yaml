@@ -47,6 +47,7 @@ dependencies:
   http: ^1.6.0
   google_fonts: ^8.2.1
   url_launcher: ^6.3.2
+  webview_flutter: ^4.13.0
   firebase_core: ^4.15.0
   firebase_messaging: ^16.7.0
   mobile_scanner: ^7.1.3

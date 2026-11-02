@@ -275,10 +275,21 @@ class PortalController extends ChangeNotifier {
     if (_restoringPendingRecharge || latestRecharge != null) return;
     _restoringPendingRecharge = true;
     try {
+      // Ask the API first: secure local storage can be lost during an app
+      // update, reinstall, or device migration, while an uncompleted checkout
+      // still belongs to the authenticated account on the server.
+      final openRecharge = await repository.getOpenCardRecharge();
       final id = await accountSessionStore.activePendingRechargeId();
-      if (id == null || id.isEmpty) return;
-      final recharge = await repository.getCardRecharge(id);
+      final recharge =
+          openRecharge ??
+          (id == null || id.isEmpty
+              ? null
+              : await repository.getCardRecharge(id));
+      if (recharge == null) return;
       latestRecharge = recharge;
+      if (!recharge.isFinal) {
+        await accountSessionStore.saveActivePendingRecharge(recharge.id);
+      }
       if (recharge.state == 'credited') {
         unawaited(refreshAccountData());
       }

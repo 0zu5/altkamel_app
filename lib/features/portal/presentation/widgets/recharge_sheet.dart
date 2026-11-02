@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../data/portal_models.dart';
 import '../portal_controller.dart';
+import 'payment_checkout_screen.dart';
 import 'redeem_dialog.dart';
 
 /// Lets the customer deliberately choose a recharge method. Voucher codes
@@ -142,17 +142,16 @@ class _RechargeSheetState extends State<_RechargeSheet>
       }
 
       setState(() => _openingCheckout = true);
-      // Start the first status check before handing off to the external
-      // browser. Some platform launchers do not emit a second lifecycle
-      // event when the custom return URL reopens an already-running app.
+      // Start the first status check before opening the hosted checkout.
       _startPolling();
-      final opened = await launchUrl(url, mode: LaunchMode.externalApplication);
+      final returned = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => PaymentCheckoutScreen(checkoutUrl: url),
+        ),
+      );
       if (!mounted) return;
       setState(() => _openingCheckout = false);
-      if (!opened) {
-        setState(() => _error = 'تعذر فتح المتصفح لإتمام عملية الدفع.');
-        return;
-      }
+      if (returned == true) _startPolling();
     } catch (e) {
       if (mounted) {
         setState(() => _error = _messageOf(e));
@@ -237,7 +236,7 @@ class _RechargeSheetState extends State<_RechargeSheet>
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'ستُفتح صفحة دفع مواملة الآمنة في المتصفح. لا تدخل بيانات بطاقتك داخل التطبيق.',
+                    'ستفتح صفحة مواملة الآمنة داخل التطبيق. لا تدخل بيانات بطاقتك إلا في صفحة الدفع.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AppColors.slate500),
                   ),
@@ -267,6 +266,16 @@ class _RechargeSheetState extends State<_RechargeSheet>
                   ] else ...[
                     _PaymentStatus(recharge: recharge),
                     const SizedBox(height: 14),
+                    if (!recharge.isFinal && recharge.checkoutUrl != null) ...[
+                      FilledButton.icon(
+                        onPressed: _openingCheckout
+                            ? null
+                            : _openExistingCheckout,
+                        icon: const Icon(Icons.open_in_new_rounded),
+                        label: const Text('متابعة الدفع الآمن'),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
                     OutlinedButton.icon(
                       onPressed: controller.rechargeLoading
                           ? null
@@ -308,6 +317,24 @@ class _RechargeSheetState extends State<_RechargeSheet>
         ),
       ),
     );
+  }
+
+  Future<void> _openExistingCheckout() async {
+    final url = controller.latestRecharge?.checkoutUrl;
+    if (url == null || url.scheme != 'https' || url.host != 'pay.altkamel.ly') {
+      setState(() => _error = 'تعذر استعادة صفحة الدفع الآمنة.');
+      return;
+    }
+    setState(() => _openingCheckout = true);
+    _startPolling();
+    final returned = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => PaymentCheckoutScreen(checkoutUrl: url),
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _openingCheckout = false);
+    if (returned == true) _startPolling();
   }
 }
 
