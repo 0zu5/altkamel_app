@@ -201,7 +201,12 @@ class _RechargeSheetState extends State<_RechargeSheet>
   Future<void> _refreshStatus() async {
     try {
       final recharge = await controller.refreshCardRecharge();
-      if (recharge?.isFinal == true) _poller?.cancel();
+      if (recharge?.isFinal == true) {
+        _poller?.cancel();
+        // A prior network/polling warning no longer applies once Laravel has
+        // confirmed the terminal, authoritative payment state.
+        if (mounted && _error != null) setState(() => _error = null);
+      }
     } catch (e) {
       if (mounted) setState(() => _error = _messageOf(e));
     }
@@ -314,7 +319,7 @@ class _RechargeSheetState extends State<_RechargeSheet>
                       const Center(child: CircularProgressIndicator()),
                     ],
                   ],
-                  if (_error != null) ...[
+                  if (_error != null && recharge?.isFinal != true) ...[
                     const SizedBox(height: 12),
                     Text(
                       _error!,
