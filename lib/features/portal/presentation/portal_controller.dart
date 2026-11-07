@@ -105,6 +105,7 @@ class PortalController extends ChangeNotifier {
     if (isLoading || (!force && hasLoadedCoreData)) return;
 
     final attempt = ++_loadAttempt;
+    var retryAfterCurrentLoad = false;
     isLoading = true;
     loadError = null;
     sessionExpired = false;
@@ -154,8 +155,11 @@ class PortalController extends ChangeNotifier {
         if (retryOnce && attempt == _loadAttempt) {
           await Future<void>.delayed(const Duration(milliseconds: 750));
           if (attempt == _loadAttempt) {
-            unawaited(loadAll(retryOnce: false, force: true));
-            return;
+            // Wait for this attempt to clear [isLoading] in [finally]. Calling
+            // loadAll here used to immediately return because this attempt was
+            // still in progress, leaving a fresh sign-in on an empty screen
+            // until the customer manually refreshed.
+            retryAfterCurrentLoad = true;
           }
         }
       }
@@ -166,6 +170,13 @@ class PortalController extends ChangeNotifier {
         notifyListeners();
       }
     }
+
+    if (retryAfterCurrentLoad) {
+      await loadAll(retryOnce: false, force: true);
+      return;
+    }
+
+    if (user == null) return;
 
     // Fetched separately so the main screen isn't blocked on them.
     unawaited(loadInvoices());
