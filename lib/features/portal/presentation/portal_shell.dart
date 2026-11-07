@@ -120,7 +120,7 @@ class _PortalShellState extends State<PortalShell> with WidgetsBindingObserver {
         MaterialPageRoute(
           builder: (_) => LoginScreen(
             authController: widget.authController,
-            portalRepository: widget.controller.repository,
+            portalController: widget.controller,
             appConfigController: widget.appConfigController,
             themeModeController: widget.themeModeController,
             biometricLoginService: widget.biometricLoginService,
@@ -155,7 +155,7 @@ class _PortalShellState extends State<PortalShell> with WidgetsBindingObserver {
       MaterialPageRoute(
         builder: (_) => LoginScreen(
           authController: widget.authController,
-          portalRepository: widget.controller.repository,
+          portalController: widget.controller,
           appConfigController: widget.appConfigController,
           themeModeController: widget.themeModeController,
           biometricLoginService: widget.biometricLoginService,

@@ -190,7 +190,7 @@ class _SessionGateState extends State<_SessionGate> {
               if (biometricSnapshot.data == true) {
                 return LoginScreen(
                   authController: widget.authController,
-                  portalRepository: widget.portalRepository,
+                  portalController: widget.portalController,
                   appConfigController: widget.appConfigController,
                   themeModeController: widget.themeModeController,
                   biometricLoginService: widget.biometricLoginService,
@@ -203,7 +203,7 @@ class _SessionGateState extends State<_SessionGate> {
         }
         return LoginScreen(
           authController: widget.authController,
-          portalRepository: widget.portalRepository,
+          portalController: widget.portalController,
           appConfigController: widget.appConfigController,
           themeModeController: widget.themeModeController,
           biometricLoginService: widget.biometricLoginService,

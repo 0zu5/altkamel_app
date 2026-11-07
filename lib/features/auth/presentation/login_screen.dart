@@ -7,7 +7,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_mode_controller.dart';
 import '../../../core/app_config/app_config_controller.dart';
-import '../../portal/data/portal_repository.dart';
 import '../../portal/presentation/portal_controller.dart';
 import '../../portal/presentation/portal_shell.dart';
 import '../data/biometric_login_service.dart';
@@ -23,7 +22,7 @@ import 'widgets/login_hero_header.dart';
 /// toggle and a gradient submit button.
 class LoginScreen extends StatefulWidget {
   final AuthController authController;
-  final PortalRepository portalRepository;
+  final PortalController portalController;
   final AppConfigController appConfigController;
   final ThemeModeController themeModeController;
   final BiometricLoginService biometricLoginService;
@@ -32,7 +31,7 @@ class LoginScreen extends StatefulWidget {
   const LoginScreen({
     super.key,
     required this.authController,
-    required this.portalRepository,
+    required this.portalController,
     required this.appConfigController,
     required this.themeModeController,
     required this.biometricLoginService,
@@ -126,14 +125,16 @@ class _LoginScreenState extends State<LoginScreen> {
     // Configuration is an optional experience enhancement. It must never
     // delay a successful login or trap the customer on the loading state.
     unawaited(widget.appConfigController.refresh());
+    // The root-owned controller survives a MaterialApp rebuild (for example
+    // when a local theme preference changes). Reset it before a new sign-in
+    // so no previous account state can survive the transition, then start the
+    // first authenticated request before the route is painted.
+    widget.portalController.resetForAccountSwitch();
+    unawaited(widget.portalController.loadAll(force: true));
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => PortalShell(
-          controller: PortalController(
-            repository: widget.portalRepository,
-            accountSessionStore:
-                widget.authController.repository.accountSessionStore,
-          ),
+          controller: widget.portalController,
           authController: widget.authController,
           appConfigController: widget.appConfigController,
           themeModeController: widget.themeModeController,
