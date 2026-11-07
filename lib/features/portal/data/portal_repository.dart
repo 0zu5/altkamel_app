@@ -521,6 +521,9 @@ class PortalRepository {
     if (e.response?.statusCode == 422) {
       return 'تحقق من مبلغ الشحن وحاول مرة أخرى.';
     }
+    if (e.response?.statusCode == 429) {
+      return 'تمت عدة محاولات بسرعة. انتظر دقيقة ثم حاول مرة أخرى.';
+    }
     if (e.response?.statusCode == 503) {
       return 'خدمة الشحن بالبطاقة غير متاحة مؤقتاً.';
     }

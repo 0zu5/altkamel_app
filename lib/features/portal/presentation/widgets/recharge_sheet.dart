@@ -170,7 +170,9 @@ class _RechargeSheetState extends State<_RechargeSheet>
 
   Future<void> _restorePendingRecharge() async {
     await controller.restorePendingCardRecharge();
-    await controller.recoverOpenCardRecharge();
+    // restorePendingCardRecharge already asks Laravel for the server-owned
+    // resumable checkout. A second identical request here can consume the
+    // customer's checkout rate budget before they tap Pay.
     if (!mounted || controller.latestRecharge?.isFinal == true) return;
     if (controller.latestRecharge != null) _startPolling();
   }
