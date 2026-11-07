@@ -284,13 +284,16 @@ class PortalController extends ChangeNotifier {
   }
 
   /// Poll Laravel, rather than trusting the gateway browser return page.
-  Future<CardRecharge?> refreshCardRecharge() async {
+  Future<CardRecharge?> refreshCardRecharge({bool reconcile = false}) async {
     final id = latestRecharge?.id;
     if (id == null || id.isEmpty) return null;
     rechargeLoading = true;
     notifyListeners();
     try {
-      final recharge = await repository.getCardRecharge(id);
+      final recharge = await repository.getCardRecharge(
+        id,
+        reconcile: reconcile,
+      );
       // The status endpoint deliberately redacts the opaque checkout URL.
       // Retain a URL previously received from checkout creation/resume so
       // a status refresh cannot remove the customer's resume action.

@@ -339,9 +339,14 @@ class PortalRepository {
 
   /// Reads the Laravel payment record. This is the source of truth after a
   /// browser return; a return page alone never proves that a payment settled.
-  Future<CardRecharge> getCardRecharge(String paymentId) async {
+  Future<CardRecharge> getCardRecharge(
+    String paymentId, {
+    bool reconcile = false,
+  }) async {
     try {
-      final response = await apiClient.dio.get('/payments/$paymentId');
+      final response = reconcile
+          ? await apiClient.dio.post('/payments/$paymentId/refresh')
+          : await apiClient.dio.get('/payments/$paymentId');
       final body = response.data;
       final data = body is Map ? body['data'] : null;
       if (data is! Map) throw Exception('تعذر التحقق من حالة عملية الشحن.');

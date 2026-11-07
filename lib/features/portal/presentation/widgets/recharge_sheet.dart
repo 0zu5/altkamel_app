@@ -118,7 +118,7 @@ class _RechargeSheetState extends State<_RechargeSheet>
       // The payment return URL opens the app, but it is not itself proof of
       // settlement. Query Laravel immediately when the browser gives focus
       // back, rather than waiting for the next periodic tick.
-      _startPolling();
+      unawaited(_reconcileAndPoll());
     }
   }
 
@@ -200,9 +200,11 @@ class _RechargeSheetState extends State<_RechargeSheet>
     }
   }
 
-  Future<void> _refreshStatus() async {
+  Future<void> _refreshStatus({bool reconcile = false}) async {
     try {
-      final recharge = await controller.refreshCardRecharge();
+      final recharge = await controller.refreshCardRecharge(
+        reconcile: reconcile,
+      );
       if (recharge?.isFinal == true) {
         _poller?.cancel();
         // A prior network/polling warning no longer applies once Laravel has
@@ -287,7 +289,7 @@ class _RechargeSheetState extends State<_RechargeSheet>
                     OutlinedButton.icon(
                       onPressed: controller.rechargeLoading
                           ? null
-                          : _refreshStatus,
+                          : () => _refreshStatus(reconcile: true),
                       icon: const Icon(Icons.refresh_rounded),
                       label: Text(
                         controller.rechargeLoading
@@ -361,7 +363,7 @@ class _RechargeSheetState extends State<_RechargeSheet>
 
   Future<void> _handleCheckoutClosed(bool? returned) async {
     if (returned == true) {
-      _startPolling();
+      await _reconcileAndPoll();
       return;
     }
 
@@ -373,6 +375,12 @@ class _RechargeSheetState extends State<_RechargeSheet>
             'تم حفظ عملية الدفع. يمكنك المتابعة لاحقاً أو العودة للرئيسية دون إنشاء عملية جديدة.';
       });
     }
+  }
+
+  Future<void> _reconcileAndPoll() async {
+    await _refreshStatus(reconcile: true);
+    if (!mounted || controller.latestRecharge?.isFinal == true) return;
+    _startPolling();
   }
 
   Future<void> _confirmAbandonCheckout() async {
