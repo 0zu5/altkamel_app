@@ -39,7 +39,7 @@ class PortalShell extends StatefulWidget {
   State<PortalShell> createState() => _PortalShellState();
 }
 
-class _PortalShellState extends State<PortalShell> {
+class _PortalShellState extends State<PortalShell> with WidgetsBindingObserver {
   late int _tabIndex;
   bool _leavingToLogin = false;
 
@@ -47,6 +47,7 @@ class _PortalShellState extends State<PortalShell> {
   void initState() {
     super.initState();
     _tabIndex = widget.controller.selectedTabIndex;
+    WidgetsBinding.instance.addObserver(this);
     widget.controller.addListener(_onControllerChanged);
     // Retain already-painted portal data when MaterialApp is rebuilt for a
     // local day/night preference change. A new account controller starts
@@ -58,8 +59,19 @@ class _PortalShellState extends State<PortalShell> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     widget.controller.removeListener(_onControllerChanged);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // A customer commonly pays on the website, then returns to the app.
+      // Refresh only the live balance in the background so that hand-off is
+      // reflected promptly without returning to a dashboard loading state.
+      unawaited(widget.controller.refreshLiveBalance(force: true));
+    }
   }
 
   void _onControllerChanged() {
@@ -98,9 +110,8 @@ class _PortalShellState extends State<PortalShell> {
     final action = await showModalBottomSheet<_AccountAction>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => _AccountSwitcher(
-        repository: widget.authController.repository,
-      ),
+      builder: (_) =>
+          _AccountSwitcher(repository: widget.authController.repository),
     );
     if (!mounted || action == null) return;
 
@@ -121,10 +132,13 @@ class _PortalShellState extends State<PortalShell> {
     }
 
     final accountId = action.accountId;
-    if (accountId == null || !await widget.authController.repository.switchAccount(accountId)) {
+    if (accountId == null ||
+        !await widget.authController.repository.switchAccount(accountId)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تعذر فتح الحساب المحفوظ. سجّل الدخول به مرة أخرى.')),
+          const SnackBar(
+            content: Text('تعذر فتح الحساب المحفوظ. سجّل الدخول به مرة أخرى.'),
+          ),
         );
       }
       return;
@@ -226,7 +240,8 @@ class _AccountSwitcher extends StatefulWidget {
 }
 
 class _AccountSwitcherState extends State<_AccountSwitcher> {
-  late final Future<List<SavedAccount>> _accounts = widget.repository.savedAccounts();
+  late final Future<List<SavedAccount>> _accounts = widget.repository
+      .savedAccounts();
 
   @override
   Widget build(BuildContext context) => SafeArea(
@@ -255,21 +270,29 @@ class _AccountSwitcherState extends State<_AccountSwitcher> {
               if (accounts.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text('لا توجد حسابات إضافية محفوظة بعد.', textAlign: TextAlign.center),
+                  child: Text(
+                    'لا توجد حسابات إضافية محفوظة بعد.',
+                    textAlign: TextAlign.center,
+                  ),
                 )
               else
                 ...accounts.map(
                   (account) => ListTile(
-                    leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                    leading: const CircleAvatar(
+                      child: Icon(Icons.person_outline),
+                    ),
                     title: Text(account.username),
                     subtitle: const Text('اضغط للتبديل إلى هذا الحساب'),
                     trailing: const Icon(Icons.chevron_left_rounded),
-                    onTap: () => Navigator.of(context).pop(_AccountAction.switchTo(account.id)),
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pop(_AccountAction.switchTo(account.id)),
                   ),
                 ),
               const SizedBox(height: 8),
               FilledButton.icon(
-                onPressed: () => Navigator.of(context).pop(const _AccountAction.add()),
+                onPressed: () =>
+                    Navigator.of(context).pop(const _AccountAction.add()),
                 icon: const Icon(Icons.person_add_alt_1_outlined),
                 label: const Text('إضافة حساب آخر'),
               ),

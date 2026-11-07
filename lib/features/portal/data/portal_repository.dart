@@ -218,6 +218,24 @@ class PortalRepository {
     }
   }
 
+  /// Fetches the latest balance from SAS through the authenticated Laravel
+  /// API. This is deliberately separate from [_portal], whose local snapshot
+  /// keeps the dashboard responsive while its initial payload is loading.
+  Future<BalanceInfo> refreshLiveBalance() async {
+    try {
+      final response = await apiClient.dio
+          .post('/portal/balance/refresh')
+          .timeout(const Duration(seconds: 12));
+      final body = response.data;
+      final data = body is Map ? body['data'] : null;
+      final billing = data is Map ? data['billing'] : null;
+      if (billing is! Map) throw Exception(SasMessages.fetchBalanceError);
+      return BalanceInfo.fromJson(Map<String, dynamic>.from(billing));
+    } on DioException catch (e) {
+      throw Exception(_friendlyError(e, SasMessages.fetchBalanceError));
+    }
+  }
+
   /// The live source of truth for the running subscription. The website
   /// treats a failure here as non-fatal (it falls back to `/user`'s
   /// `profile_id`), so callers may want to swallow the exception.

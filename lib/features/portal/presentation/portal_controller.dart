@@ -40,6 +40,8 @@ class PortalController extends ChangeNotifier {
   UserProfile? user;
   List<String> permissions = const [];
   BalanceInfo balance = const BalanceInfo();
+  DateTime? _lastLiveBalanceRefreshAt;
+  Future<void>? _liveBalanceRefresh;
   ServiceInfo? service;
   List<PackageInfo> packages = const [];
   List<TowerInfo> towers = const [];
@@ -136,6 +138,7 @@ class PortalController extends ChangeNotifier {
       antennaLocationSaved = initial.antennaLocationSaved;
       service = initial.service;
       unawaited(_refreshIdentity());
+      unawaited(refreshLiveBalance(force: force));
     } catch (e, stackTrace) {
       debugPrint('Portal initial load failed: $e');
       debugPrintStack(stackTrace: stackTrace);
@@ -228,6 +231,37 @@ class PortalController extends ChangeNotifier {
       // Best-effort refresh — ignore failures.
     }
     loadInvoices();
+  }
+
+  /// Keeps a website-initiated SAS recharge visible shortly after the app
+  /// opens without blocking the dashboard on a remote SAS request.
+  Future<void> refreshLiveBalance({bool force = false}) {
+    final active = _liveBalanceRefresh;
+    if (active != null) return active;
+
+    final last = _lastLiveBalanceRefreshAt;
+    if (!force &&
+        last != null &&
+        DateTime.now().difference(last) < const Duration(seconds: 90)) {
+      return Future.value();
+    }
+
+    final refresh = () async {
+      try {
+        final live = await repository.refreshLiveBalance();
+        balance = live;
+        _lastLiveBalanceRefreshAt = DateTime.now();
+        notifyListeners();
+      } catch (_) {
+        // The stored portal snapshot remains usable if SAS is temporarily
+        // unreachable. A customer can still pull to refresh or reopen later.
+      } finally {
+        _liveBalanceRefresh = null;
+      }
+    }();
+
+    _liveBalanceRefresh = refresh;
+    return refresh;
   }
 
   Future<CardRecharge?> createCardRecharge(int amountLyd) async {
